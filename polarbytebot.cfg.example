@@ -1,0 +1,61 @@
+# Database Configuration
+#   system: database system type (mysql, postgresql, or sqlite)
+#   host: sql server ip or hostname
+#   database: database name (sqlite: relative or absolute database file path)
+#   username: server/database username (sqlite: ignored)
+#   password: server/database password (sqlite: ignored)
+
+[database]
+system = postgresql
+host = localhost
+database = reddit_polarbytebot_db
+username = postgres_reddit
+password = password
+
+# Reddit Configuration
+#  user_agent: user agent reported by praw
+#  signature: text which gets added at the end of each submission
+
+[reddit]
+user_agent = reddit_username
+signature = \n\n---\n^(Beep boop. This message was created by a bot. Please message reddit_username if you have any questions, suggestions or concerns. **This is a beta test**)
+
+# OAuth2 Configuration
+#  refresh_token: token to refresh authentification (receive after setup)
+#  client_id: id from registered developed app on: https://www.reddit.com/prefs/apps/
+#  client_secret: secret from registered developed app: https://www.reddit.com/prefs/apps/
+#  redirect_uri: page to receive refresh_token
+#  username: reddit username of bot account
+#  permissions: granted permissions to bot
+
+[oauth2]
+refresh_token = xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+client_id = xxxxxxxxxxxxxxx
+client_secret = xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+redirect_uri = http://127.0.0.1:65010/authorize_callback
+username = reddit_username
+permissions = edit flair history identity privatemessages read submit vote
+
+# Log File Configuration
+# For details, see: https://docs.python.org/3/library/logging.html
+
+[loggers]
+keys=root
+
+[handlers]
+keys=roothandler
+
+[formatters]
+keys=rootformatter
+
+[logger_root]
+level=NOTSET
+handlers=roothandler
+
+[handler_roothandler]
+class=logging.handlers.TimedRotatingFileHandler
+formatter=rootformatter
+args=('polarbytebot.log','midnight',1)
+
+[formatter_rootformatter]
+format=%(asctime)s - %(levelname)s - %(message)s
