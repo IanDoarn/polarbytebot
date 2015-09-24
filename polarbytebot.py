@@ -259,6 +259,8 @@ def main():
             logging.error(e)
             session.rollback()
             
+def test():
+    print(['>hi, i am bob' + cfg_file['reddit']['signature']])
 
 if __name__ == '__main__':
     main()

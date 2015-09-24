@@ -15,10 +15,18 @@ password = password
 # Reddit Configuration
 #  user_agent: user agent reported by praw
 #  signature: text which gets added at the end of each submission
+#   hint!: multiline values are okay, as long as they are indented deeper than the first line
+#   example = this is
+#    okay. even two
+#    
+#    linebreaks are okay.
 
 [reddit]
 user_agent = reddit_username
-signature = \n\n---\n^(Beep boop. This message was created by a bot. Please message reddit_username if you have any questions, suggestions or concerns. [Source Code](https://github.com/Tinywave/polarbytebot))
+signature =
+	 
+	---
+	^(Beep boop. This message was created by a bot. Please message reddit_username if you have any questions, suggestions or concerns. [Source Code](https://github.com/Tinywave/polarbytebot))
 # OAuth2 Configuration
 #  refresh_token: token to refresh authentification (receive after setup)
 #  client_id: id from registered developed app on: https://www.reddit.com/prefs/apps/
