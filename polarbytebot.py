@@ -81,16 +81,16 @@ def authenticate(OAuth2):
 def prepare_comment(_thing_id, _submitted, _content):
     last_id = _thing_id
     while(True):            
-        _current_content = _content[:10000 - len('\n\n--- continued below ---') - len(signature)]
+        _current_content = _content[:10000 - len('\n\n--- continued below ---') - len(cfg_file['reddit']['signature'])]
         if len(_content) == 0:
             return
         row = bot_comments()
         row.thing_id = last_id
         row.submitted = _submitted
         if _content[len(_current_content):] == '':
-            row.content = _current_content + signature
+            row.content = _current_content + cfg_file['reddit']['signature']
         else:
-            row.content = _current_content + '\n\n--- continued below ---' + signature
+            row.content = _current_content + '\n\n--- continued below ---' + cfg_file['reddit']['signature']
         session.add(row)
         session.commit()
         last_id = 'i' + str(session.query(bot_comments).order_by(desc(bot_comments.id)).first().id)
