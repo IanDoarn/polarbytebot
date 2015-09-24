@@ -39,7 +39,7 @@ def load_recent_comments(enabled_subreddits):
                 except KeyError:
                     comment_queue[cm.subreddit.display_name] = [cm]
                     logging.info('append item to comment_queue: ' + cm.name)	
-def load_recent_submissions(enabled_subreddits):#, submission_queue):
+def load_recent_submissions(enabled_subreddits):
     global r
     global search_submission_id    
     search_first_sub = False

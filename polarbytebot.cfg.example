@@ -18,8 +18,7 @@ password = password
 
 [reddit]
 user_agent = reddit_username
-signature = \n\n---\n^(Beep boop. This message was created by a bot. Please message reddit_username if you have any questions, suggestions or concerns.)
-
+signature = \n\n---\n^(Beep boop. This message was created by a bot. Please message reddit_username if you have any questions, suggestions or concerns. [Source Code](https://github.com/Tinywave/polarbytebot))
 # OAuth2 Configuration
 #  refresh_token: token to refresh authentification (receive after setup)
 #  client_id: id from registered developed app on: https://www.reddit.com/prefs/apps/
