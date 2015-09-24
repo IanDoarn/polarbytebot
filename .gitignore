@@ -1,3 +1,5 @@
 polarbytebot.log
 polarbytebot.cfg
 venv
+__pycache__
+*.swp
