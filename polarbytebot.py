@@ -13,11 +13,11 @@ from sqlalchemy import desc
 
 #global reddit session
 r = None
-def load_recent_comments(enabled_subreddits):#, comment_queue):
+def load_recent_comments(enabled_subreddits):
     global r
     global search_comment_id
     comment_queue = {}
-	#search_: id of object which was the newest object in the last round
+ 
     search_first_cm = False
     while (True):
         comments = r.get_comments('+'.join(enabled_subreddits),limit=None)
@@ -71,11 +71,9 @@ def authenticate(OAuth2):
     r.set_oauth_app_info(client_id = OAuth2['client_id'], 
                          client_secret = OAuth2['client_secret'], 
                          redirect_uri = OAuth2['redirect_uri'])
-    #url = r.get_authorize_url(OAuth2['username'], OAuth2['permissions'], True)#'polarbytebot',
-    #                          'edit flair history identity ' + 
-    #                          'privatemessages read submit vote',True)
+    #url = r.get_authorize_url(OAuth2['username'], OAuth2['permissions'], True)
     #webbrowser.open(url)
-    #access_information = r.get_access_information('Q8s58GTsYQPJSuJMfc-E7gPly0Y')
+    #access_information = r.get_access_information('')
     #print (access_information)
     r.refresh_access_information(OAuth2['refresh_token'])
     return
@@ -182,8 +180,7 @@ def main():
     
     logging.config.fileConfig(path_to_cfg)
     
-    r = praw.Reddit('polarbytebot/1.0 by /u/Xyooz')	
-    print(cfg_file['oauth2'])
+    r = praw.Reddit(cfg_file['reddit']['user_agent'])	
     enabled_subreddits = ['Guildwars2']
     while (True):
         try:
@@ -208,8 +205,8 @@ def main():
         submission_queue = {}
         comment_queue = {}
         try:
-            comment_queue = load_recent_comments(enabled_subreddits)#, comment_queue)
-            submission_queue = load_recent_submissions(enabled_subreddits)#, submission_queue)
+            comment_queue = load_recent_comments(enabled_subreddits)
+            submission_queue = load_recent_submissions(enabled_subreddits)
             distribute_queues(comment_queue, submission_queue)
             last_ids = session.query(subreddit).filter_by(website="reddit").first()
             if last_ids == None:
