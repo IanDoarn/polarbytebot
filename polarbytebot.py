@@ -108,6 +108,8 @@ def guildwars2_filter_cm(comments, array_anet_names):
             row.title = title + ' [' + cm.author.name + ']'
             row.type = 'link'
             row.subreddit = 'gw2devtrack'
+            row.submitted = False
+            row.content = cm.permalink.replace('//www.reddit.com','//np.reddit.com') + '?context=1000'
             session.add(row)
         if re.search('http.*?:\/\/.*?guildwars2.com\/', cm.body) != None:
             logging.info("comment with gw2 link: " + cm.name)
@@ -134,6 +136,8 @@ def guildwars2_filter_sm(submissions, array_anet_names):
             row.title = title + ' [' + sm.author.name + ']'
             row.type = 'link'
             row.subreddit = 'gw2devtrack'
+            row.submitted = False
+            row.content = sm.permalink.replace('//www.reddit.com','//np.reddit.com') + '?context=1000'
             session.add(row)
         if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.selftext) != None:
             logging.info("submission with gw2 link in selftext: " + sm.name)
@@ -160,7 +164,10 @@ def guildwars2_filter_sm(submissions, array_anet_names):
 
 
 def distribute_queues(comment_queue, submission_queue):
-    anet_members = list(session.query(anet_member))
+    anet_query = list(session.query(anet_member))
+    anet_members = []
+    for member in anet_query:
+        anet_members.append(member.username)
     try:
         guildwars2_filter_cm(comment_queue['Guildwars2'], anet_members)
     except KeyError as e:
@@ -249,9 +256,9 @@ def main():
             to_be_submitted = session.query(bot_submissions).filter_by(submitted=False).all()
             for tbsm in to_be_submitted:
                 if tbsm.type == 'link':
-                    r.submit(tbsm.subreddit,tbsm.title,url=content)
+                    r.submit(tbsm.subreddit,tbsm.title,url=tbsm.content)
                 elif tbsm.type == 'self':
-                    r.submit(tbsm.subreddit,tbsm.title,text=content)
+                    r.submit(tbsm.subreddit,tbsm.title,text=tbsm.content)
                 session.query(bot_submissions).filter_by(id=tbsm.id).update({'submitted':True})
                 logging.info(str(tbsm.id) + ' in bot_submissions submitted')
                 session.commit()
