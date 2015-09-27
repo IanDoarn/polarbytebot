@@ -13,75 +13,169 @@ from sqlalchemy import desc
 
 #global reddit session
 r = None
-def load_recent_comments(enabled_subreddits): #RENAME: populate_comment_queue():
+
+class CommentQueue:
     """
-    Load all (up to 1000) comments from /r/all which
-    where posted since last time.
-
+    Queue of all to be processed comments.
     """
-    global r
-    global search_comment_id #RENAME: self.last_comment_id
-    comment_queue = {} #RENAME: self.comment_queue
- 
-    search_first_cm = False
-    while (True):
-        comments = r.get_comments('+'.join(enabled_subreddits),limit=None)
-		
-        for cm in comments:
-            if cm.author.name != 'polarbytebot':
-                if not search_first_cm:
-                    if search_comment_id <= 0:
-                        search_comment_id = int(cm.id,36)
-                        logging.warning('search_comment_id initialised with' + str(int(cm.id,36)))
-                    t_search_comment_id = int(cm.id,36)
-                    search_first_cm = True
-                if (int(cm.id,36) <= search_comment_id):
-                    search_comment_id = t_search_comment_id
-                    return comment_queue
-                try:
-                    comment_queue[cm.subreddit.display_name].append(cm)
-                    logging.info('append item to comment_queue: ' + cm.name)
-                except KeyError:
-                    comment_queue[cm.subreddit.display_name] = [cm]
-                    logging.info('append item to comment_queue: ' + cm.name)	
-def load_recent_submissions(enabled_subreddits):
-    global r
-    global search_submission_id    
-    search_first_sub = False
-    submission_queue = {}
-    while (True):
-        subreddits = r.get_subreddit('+'.join(enabled_subreddits))
-        submissions = subreddits.get_new(limit=None)
+    def __init__(self, _enabled_subreddits, _botname):
+        self.queue = {}
+        self.enabled_subreddits = '+'.join(_enabled_subreddits)
+        self.botname = _botname
+        self.last_comment_id = 0
+        self.first_comment = False
+    
+    """
+    Loads up to 1000 comments since last processing.
+    """
+    def populate(self):
+        try:
+            self.last_comment_id = session.query(subreddit)\
+                                    .filter_by(website='reddit')\
+                                    .first().last_comment
+        except:
+            self.last_comment_id = 0
+            logging.warning('CommentQueue: last_comment_id failed init: 0')
+        while(True):
+            comments = r.get_comments(self.enabled_subreddits,limit=None)
+            for cm in comments:
+                if cm.author.name != self.botname:
+                    if not self.first_comment:
+                        if self.last_comment_id <= 0:
+                            self.last_comment_id = int(cm.id,36)
+                            logging.warning('commentQueue: last_comment_id'+\
+                                            'repaired: {0}'\
+                                            .format(int(cm.id,36)))
+                        t_last_comment_id = int(cm.id,36)
+                        self.first_comment = True
+                    if int(cm.id,36) <= self.last_comment_id:
+                        self.last_comment_id = t_last_comment_id
+                        return
+                    try:
+                        self.queue[cm.subreddit.display_name].append(cm)
+                    except KeyError:
+                        self.queue[cm.subreddit.display_name] = [cm]
+                    else:
+                        logging.info('commentQueue: add: {0} - {1}'\
+                                    .format(cm.name, int(cm.id,36))
+        
+class SubmissionQueue:
+    """
+    Queue of all to be processed submissions.
+    """
+    def __init__(self, _enabled_subreddits, _botname, _last_submission_id):
+        self.queue = {}
+        self.enabled_subreddits = '+'.join(_enabled_subreddits)
+        self.botname = _botname
+        self.last_submission_id = _last_submission_id
+        self.first_submissions = False
+    """
+    Loads up to 1000 submissions since last processing.
+    """
+    def populate(self):
+        try:
+            self.last_submission_id = session.query(subreddit)\
+                                    .filter_by(website='reddit')\
+                                    .first().last_submission
+        except:
+            self.last_submission_id = 0
+            logging.warning('SubmissionQueue: last_submission_id failed init: 0')
+        while(True):
+            subreddits = r.get_subreddit(self._enabled_subreddits)
+            submissions = subreddits.get_new(limit=None))
+            for subm in submissions:
+                if subm.author.name != self.botname:
+                    if not self.first_submission:
+                        if self.last_submission_id <= 0:
+                            self.last_submission_id = int(cm.id,36)
+                            logging.warning('submissionQueue:'+\ 
+                                            'last_submission_id repaired: {0}'\
+                                            .format(int(cm.id,36)))
+                        t_last_submission_id = int(cm.id,36)
+                        self.first_submission = True
+                    if int(cm.id,36) <= self.last_submission_id:
+                        self.last_submission_id = t_last_submission_id
+                        return
+                    try:
+                        self.queue[subm.subreddit.display_name].append(subm)
+                    except KeyError:
+                        self.queue[subm.subreddit.display_name] = [subm]
+                    else:
+                        logging.info('submissionQueue: add: {0} - {1}'
+                                    .format(subm.name, int(subm.id,36))
+            
+class Polarbyte:
+    def __init__(self, cfg_file):
+        self.OAuth2 = cfg_file['oauth2']
+        self.praw = praw.Reddit(cfg_file['reddit']['user_agent'])
+        self.signature = cfg_file['reddit']['signature']
+        self.botname = cfg_file['oauth2']
+        self.enabled_subreddits = [e.strip() for e in cfg_file['reddit']['enabled_subreddits'].split(',')]
+        authenticate()
 
-        for subm in submissions:
-            if subm.author.name != 'polarbytebot':
-                if not search_first_sub:
-                    if search_submission_id <= 0:
-                        search_submission_id = int(subm.id,36)
-                        logging.warning('search_submission_id initialised with' + str(int(subm.id,36)))
-                    t_search_submission_id = int(subm.id,36)
-                    search_first_sub = True
-                if (int(subm.id,36) <= search_submission_id):
-                    search_submission_id = t_search_submission_id
-                    return submission_queue
-                try:
-                    submission_queue[subm.subreddit.display_name].append(subm)
-                    logging.info('append item to submission_queue: ' + subm.name)
-                except KeyError:
-                    submission_queue[subm.subreddit.display_name] = [subm]
-                    logging.info('append item to submission_queue: ' + subm.name)
+    def authenticate(self):
+        try:
+            r.set_oauth_app_info(client_id = self.OAuth2['client_id'],
+                                 client_secret = self.OAuth2['client_secret'],
+                                 redirect_uri = self.OAuth2['redirect_uri'])
+            r.refresh_access_information(self.OAuth2['refresh_token'])
+        except Exception as e:
+            logging.error('OAuth2: failed: {0}'.format(e))
+        else:
+            logging.info('OAuth2 authenticated')
+
+    def collect(self):
+        cmQueue = CommentQueue(self.enabled_subreddits, self.botname)
+        smQueue = SubmissionQueue(self.enabled_subreddits, self.botname)
+        
+        
 
 
-def authenticate(OAuth2):
-    r.set_oauth_app_info(client_id = OAuth2['client_id'], 
-                         client_secret = OAuth2['client_secret'], 
-                         redirect_uri = OAuth2['redirect_uri'])
-    #url = r.get_authorize_url(OAuth2['username'], OAuth2['permissions'], True)
-    #webbrowser.open(url)
-    #access_information = r.get_access_information('')
-    #print (access_information)
-    r.refresh_access_information(OAuth2['refresh_token'])
-    return
+
+        updateLastestObjectIds(cmQueue.last_comment_id, smQueue.last_submission_id)
+        session.commit()
+    def submit(self):
+    def addComment(self, _thing_id, _content, _submitted=False):
+        last_id = _thing_id
+        extra_len = len('\n\n--- continued below ---') + len(self.signature)
+        while(True)
+            if len(_content) <= 0:
+                return
+            content_parts = _content.split('\n')
+            stiched_content = ''
+            for part in content_parts:
+                if len(stiched_content) + len(part) + extra_len <= 10000:
+                    stiched_content += part
+                
+                
+            current_content = _content[:10000 - extra_len]
+        row = bot_comments()
+        
+    def addSubmission(self, _subreddit, _title, _author, _content, _type, _submitted=False):
+        row = bot_submissions()
+        if len(_title) + len(_author) + len(' []') > 300:
+            row.title = '{0}... [{1}]'.format(_title[:300 - len(_author) - len(' []') - len('...')], _author)
+        else:
+            row.title = '{0} [{1}]'.format(_title, _author)
+        row.type = _type
+        row.subreddit = _subreddit
+        row.content = _content
+        row.submitted = _submitted
+        session.add(row)
+        session.commit()
+    
+    def updateLatestObjectIds(self, _last_comment_id, _last_submission_id):
+        lastIds = session.query(subreddit).filter_by(website='reddit').first()
+        if lastIds == None:
+            row = subreddit()
+            row.website = 'reddit'
+            row.last_comment = _last_comment_id
+            row.last_submission = _last_submission_id
+            session.add(row)
+        else
+            session.query(subreddit).filter_by(website='reddit').first()\
+                .update({'last_submission':_last_submission_id,\
+                         'last_comment':_last_comment_id})
 
 def prepare_comment(_thing_id, _submitted, _content):
     last_id = _thing_id
