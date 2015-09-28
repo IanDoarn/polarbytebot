@@ -29,6 +29,7 @@ class CommentQueue:
     Loads up to 1000 comments since last processing.
     """
     def populate(self):
+        global r
         try:
             self.last_comment_id = session.query(subreddit)\
                                     .filter_by(website='reddit')\
@@ -39,6 +40,7 @@ class CommentQueue:
         while(True):
             comments = r.get_comments(self.enabled_subreddits,limit=None)
             for cm in comments:
+                print(cm.author.name)
                 if cm.author.name != self.botname:
                     if not self.first_comment:
                         if self.last_comment_id <= 0:
@@ -59,20 +61,24 @@ class CommentQueue:
                         logging.info('commentQueue: add: {0} - {1}'\
                                     .format(cm.name, int(cm.id,36)))
         
+    def distribute(self):
+        for key in self.queue:
+            if key == 'Guildwars2':
+                print(key)
 class SubmissionQueue:
     """
     Queue of all to be processed submissions.
     """
-    def __init__(self, _enabled_subreddits, _botname, _last_submission_id):
+    def __init__(self, _enabled_subreddits, _botname):
         self.queue = {}
         self.enabled_subreddits = '+'.join(_enabled_subreddits)
         self.botname = _botname
-        self.last_submission_id = _last_submission_id
         self.first_submissions = False
     """
     Loads up to 1000 submissions since last processing.
     """
     def populate(self):
+        global r
         try:
             self.last_submission_id = session.query(subreddit)\
                                     .filter_by(website='reddit')\
@@ -103,17 +109,23 @@ class SubmissionQueue:
                     else:
                         logging.info('submissionQueue: add: {0} - {1}'
                                     .format(subm.name, int(subm.id,36)))
+    def distribute(self):
+       for key in self.queue:
+            if key == 'Guildwars2':
+                print(key)
             
 class Polarbyte:
     def __init__(self, cfg_file):
+        global r
         self.OAuth2 = cfg_file['oauth2']
-        self.praw = praw.Reddit(cfg_file['reddit']['user_agent'])
+        r = praw.Reddit(cfg_file['reddit']['user_agent'])
         self.signature = cfg_file['reddit']['signature']
         self.botname = cfg_file['oauth2']
         self.enabled_subreddits = [e.strip() for e in cfg_file['reddit']['enabled_subreddits'].split(',')]
         self.authenticate()
 
     def authenticate(self):
+        global r
         try:
             r.set_oauth_app_info(client_id = self.OAuth2['client_id'],
                                  client_secret = self.OAuth2['client_secret'],
@@ -127,8 +139,11 @@ class Polarbyte:
     def collect(self):
         cmQueue = CommentQueue(self.enabled_subreddits, self.botname)
         smQueue = SubmissionQueue(self.enabled_subreddits, self.botname)
-        #process objects
-        updateLastestObjectIds(cmQueue.last_comment_id, smQueue.last_submission_id)
+        cmQueue.populate()
+        smQueue.distribute()
+        cmQueue.distribute()
+        smQueue.distribute()
+        updateLatestObjectIds(cmQueue.last_comment_id, smQueue.last_submission_id)
         session.commit()
 
     def submit(self):
@@ -136,6 +151,7 @@ class Polarbyte:
         submitSubmissions()
 
     def submitComments(self):
+        global r
         to_be_commented = session.query(bot_comments).filter_by(submitted=False).all()
         for tbcm in to_be_commented:
             obj = r.get_info(thing_id=tbcm.thing_id)
@@ -154,6 +170,7 @@ class Polarbyte:
             session.commit()
 
     def submitSubmissions(self):
+        global r
         to_be_submitted = session.query(bot_submissions).filter_by(submitted=False).all()
         for tbsm in to_be_submitted:
             if tbsm.type == 'link':
@@ -229,7 +246,7 @@ def guildwars2_filter_cm(comments, array_anet_names):
         if cm.author.name in array_anet_names:
             logging.info("comment from anet: " + cm.name)
             row = bot_submissions()
-            title = cm.link_title
+            tite = cm.link_title
             if (len(title) + len(cm.author.name) + 3) > 300:
                 title = title[:300 - len(cm.author.name) - 3 - 3]
                 title += '...'
@@ -314,6 +331,9 @@ def main():
     logging.config.fileConfig(path_to_cfg)
 
     bot = Polarbyte(cfg_file)
-
+    print(bot.enabled_subreddits)
+    while(True):
+        bot.collect()
+     
 if __name__ == '__main__':
     main()
