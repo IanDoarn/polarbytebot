@@ -66,6 +66,43 @@ class p_iframe(html.parser.HTMLParser):
                         self._src = 'https:' + value
                     else:
                         self._src = value
+def process_comment():
+    
+def process_submission(submissions, array_anet_names):
+    submitArray = []
+    for sm in submissions:
+        if sm.author.name in array_anet_names:
+            submit = {}
+            submit['type'] = 'link'
+            title = sm.title
+            if (len(title) + len(sm.author.name) + 3) > 300:
+                   title = title[:300 - len(sm.author.name) - 3 - 3]
+                   title += '...'
+            submit['title'] = title
+            submit['subreddit'] = 'gw2devtrack'
+            submit['content'] = sm.permalink.replace('//www.reddit.com','//np.reddit.com') + '?context=1000'
+            submitArray.append(submit)
+        if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.selftext) != None:
+            all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])]*', sm.selftext)
+            for link in all_links:
+                if link != '':
+                    submit = {}
+                    submit['thing_id'] = sm.name
+                    submit['submitted'] = False 
+                    submit['toLoad'] = link
+                    submit['type'] = 'comment'
+                    submitArray.append(submit)
+        if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.url) != None:
+            all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])]*', sm.url)
+            for link in all_links:
+                if link != '':
+                    submit = {}
+                    submit['thing_id'] = sm.name
+                    submit['submitted'] = False     
+                    submit['toLoad'] = link
+                    submit['type'] = 'comment'
+                    submitArray.append(submit)
+
 def locate_origin(url):
     forum_re = re.search('http.*?:\/\/forum-..\.guildwars2.com\/forum\/', url)
     blog_re = re.search('http.*?:\/\/.{0,4}guildwars2.com\/.*?\/', url)
@@ -80,7 +117,7 @@ def locate_origin(url):
 def forum_parse(url):
     post_dict = {}
     post_dict['id'] = forum_id(url)
-    post_dict['req'] = requests.get(url)
+    post_dict['req'] = requests_get(url)
     post_dict['message'] = content_selection(post_dict['req'].text, "' id='post" + post_dict['id'], '<div', '</div>')
     post_dict['datetime'] = forum_datetime(post_dict['message'])
     t_name = forum_name(post_dict['message'])
@@ -96,7 +133,7 @@ def forum_parse(url):
         return markdown_header + markdown_content + forum_attachments(post_dict['attach_content'])
 def blog_parse(url):
     post_dict = {}
-    post_dict['req'] = requests.get(url)
+    post_dict['req'] = requests_get(url)
     post_dict['article'] = content_selection(post_dict['req'].text, '<div class="article">', '<div', '</div>')
     post_dict['attribution'] = content_selection(post_dict['article'], '<p class="blog-attribution">', '<p', '</p>')
     post_dict['name'] = blog_name(post_dict['attribution'])
@@ -107,15 +144,32 @@ def blog_parse(url):
     return markdown_header + markdown_content
 def forum_id(url):
     id = re.search('#post[0123456789]*$',url)
+    second_try_id = re.search('\/[0123456789]*$', url)
     if id != None:
         id = id.group(0)[5:]
+    elif second_try_id != None:
+        id = id.group(0)[1:]
     else:
-        req = requests.get(url)
+        req = requests_get(url)
         id = re.search("' id='post[0123456789]*'>",req.text)
         if id != None:
             id = id.group(0)
             id = id[10:len(id)-2]
     return id
+def requests_get(url):
+    counter = 0
+    while(True):
+        try:
+            req = requests.get(url)
+        except:
+            pass
+        else:
+            return req
+        finally:
+            counter += 1
+            if counter > 100:
+                return
+            
 def content_selection(content, start_str, nst, net):
     content_start = content.find(start_str)
     if content_start != -1:
@@ -320,7 +374,12 @@ def tag_h6(content):
 def tag_tabs(content):
     return content.replace('\t','')
 def tag_other(content):
-    return (content.replace('<li class="yui3-g">'," ").replace('<div class="yui3-u-1">'," ")
-                .replace('</div>'," ").replace('<div>'," ").replace('<div id="commerce-intro">'," ")
-                .replace('<div class="featured">', " ").replace('<div id="commerce-items">'," ")
-                .replace('<div class="copy">'," "))
+    return (content.replace('<li class="yui3-g">'," ")
+                    .replace('<div class="yui3-u-1">'," ")
+                    .replace('<div class="yui3-u-1-2 image-container screenshot">'," ")
+                    .replace('<div class="yui3-u-1 text-container">'," ")
+                    .replace('</div>'," ").replace('<div>'," ")
+                    .replace('<div id="commerce-intro">'," ")
+                    .replace('<div class="featured">', " ")
+                    .replace('<div id="commerce-items">'," ")
+                    .replace('<div class="copy">'," "))
