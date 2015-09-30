@@ -36,7 +36,8 @@ class CommentQueue:
                                     .first().last_comment
         except:
             self.last_comment_id = 0
-            logging.warning('CommentQueue: last_comment_id failed init: 0')
+            logging.warning('CommentQueue: ' + \
+                                'last_comment_id failed init: 0')
         while(True):
             comments = r.get_comments(self.enabled_subreddits,limit=None)
             for cm in comments:
@@ -52,7 +53,7 @@ class CommentQueue:
                         self.first_comment = True
                     if int(cm.id,36) <= self.last_comment_id:
                         self.last_comment_id = t_last_comment_id
-                        return
+                        return self.queue
                     try:
                         self.queue[cm.subreddit.display_name].append(cm)
                     except KeyError:
@@ -62,9 +63,18 @@ class CommentQueue:
                                     .format(cm.name, int(cm.id,36)))
         
     def distribute(self):
+        arenanet_member = prepareDistribute()
         for key in self.queue:
             if key == 'Guildwars2':
-                print(key)
+                guildwars2.process_comment(self.queue[key],)
+        return self.queue
+
+    def prepareDistribute(self):
+        anet_query = list(session.query(anet_member))
+        anet_members = []
+        for member in anet_query:
+            anet_members.append(member.username)
+        return (anet_members)
 class SubmissionQueue:
     """
     Queue of all to be processed submissions.
@@ -85,7 +95,8 @@ class SubmissionQueue:
                                     .first().last_submission
         except:
             self.last_submission_id = 0
-            logging.warning('SubmissionQueue: last_submission_id failed init: 0')
+            logging.warning('SubmissionQueue: ' + \
+                                'last_submission_id failed init: 0')
         while(True):
             subreddits = r.get_subreddit(self._enabled_subreddits)
             submissions = subreddits.get_new(limit=None)
@@ -101,7 +112,7 @@ class SubmissionQueue:
                         self.first_submission = True
                     if int(cm.id,36) <= self.last_submission_id:
                         self.last_submission_id = t_last_submission_id
-                        return
+                        return self.queue
                     try:
                         self.queue[subm.subreddit.display_name].append(subm)
                     except KeyError:
@@ -110,10 +121,18 @@ class SubmissionQueue:
                         logging.info('submissionQueue: add: {0} - {1}'
                                     .format(subm.name, int(subm.id,36)))
     def distribute(self):
-       for key in self.queue:
+        arenanet_member = prepareDistribute()
+        for key in self.queue:
             if key == 'Guildwars2':
-                print(key)
-            
+                guildwars2.process_submission(self.queue[key], arenanet_member)
+        return self.queue
+
+    def prepareDistribute(self):
+        anet_query = list(session.query(anet_member))
+        anet_members = []
+        for member in anet_query:
+            anet_members.append(member.username)
+        return (anet_members)
 class Polarbyte:
     def __init__(self, cfg_file):
         global r
@@ -121,7 +140,8 @@ class Polarbyte:
         r = praw.Reddit(cfg_file['reddit']['user_agent'])
         self.signature = cfg_file['reddit']['signature']
         self.botname = cfg_file['oauth2']
-        self.enabled_subreddits = [e.strip() for e in cfg_file['reddit']['enabled_subreddits'].split(',')]
+        self.enabled_subreddits = [e.strip() for e in \
+                                    cfg_file['reddit']['enabled_subreddits']\                                       .split(',')]
         self.authenticate()
 
     def authenticate(self):
@@ -137,12 +157,10 @@ class Polarbyte:
             logging.info('OAuth2 authenticated')
 
     def collect(self):
-        cmQueue = CommentQueue(self.enabled_subreddits, self.botname)
-        smQueue = SubmissionQueue(self.enabled_subreddits, self.botname)
-        cmQueue.populate()
-        smQueue.distribute()
-        cmQueue.distribute()
-        smQueue.distribute()
+        cmQueue = CommentQueue(self.enabled_subreddits, self.botname)\
+                    .populate().distribute()
+        smQueue = SubmissionQueue(self.enabled_subreddits, self.botname)\
+                    .populate().distribute()
         updateLatestObjectIds(cmQueue.last_comment_id, smQueue.last_submission_id)
         session.commit()
 
@@ -238,97 +256,11 @@ class Polarbyte:
     def searchSubmitted(self, _table, _search_id):
         return session.query(_table).filter_by(id=_search_id).first().submitted_id
     def updateThingId(self, _table, _search_id, _new_id):
-        session.query(_table).filter_by(id=_search_id).update({'thing_id':_new_id})
+        session.query(_table).filter_by(id=_search_id).update({'thing_idV':_new_id})
 
-def guildwars2_filter_cm(comments, array_anet_names):
-    for cm in comments:
-        logging.info("comment")
-        if cm.author.name in array_anet_names:
-            logging.info("comment from anet: " + cm.name)
-            row = bot_submissions()
-            tite = cm.link_title
-            if (len(title) + len(cm.author.name) + 3) > 300:
-                title = title[:300 - len(cm.author.name) - 3 - 3]
-                title += '...'
-            row.title = title + ' [' + cm.author.name + ']'
-            row.type = 'link'
-            row.subreddit = 'gw2devtrack'
-            row.submitted = False
-            row.content = cm.permalink.replace('//www.reddit.com','//np.reddit.com') + '?context=1000'
-            session.add(row)
-        continue # Dlogging.info('submitComment: submit: {0}'.format(tbcm.id))ISALLOWS COMMENTS TO BE PARSED FPR GW2 LINKS
-        if re.search('http.*?:\/\/.*?guildwars2.com\/', cm.body) != None:
-            logging.info("comment with gw2 link: " + cm.name)
-            all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])\s]*', cm.body)
-            for link in all_links:
-                if link != '':
-                    try:
-                        prepare_comment(cm.name, False, guildwars2.locate_origin(link))
-                    except Exception as e:
-                        logging.error(e)
-                        session.rollback()
-                    else:
-                        session.commit()
-def guildwars2_filter_sm(submissions, array_anet_names):
-    for sm in submissions:
-        logging.info('submission')
-        if sm.author.name in array_anet_names:
-            logging.info("submission from anet: " + sm.name )
-            row = bot_submissions()
-            title = sm.title
-            if (len(title) + len(sm.author.name) + 3) > 300:
-                title = title[:300 - len(sm.author.name) - 3 - 3]
-                title += '...'
-            row.title = title + ' [' + sm.author.name + ']'
-            row.type = 'link'
-            row.subreddit = 'gw2devtrack'
-            row.submitted = False
-            row.content = sm.permalink.replace('//www.reddit.com','//np.reddit.com') + '?context=1000'
-            session.add(row)
-        if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.selftext) != None:
-            logging.info("submission with gw2 link in selftext: " + sm.name)
-            all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])]*', sm.selftext)
-            for link in all_links:
-                if link != '':
-                    try:
-                        prepare_comment(sm.name, False, guildwars2.locate_origin(link))
-                    except Exception as e:
-                        session.rollback()
-                        logging.error(e)
-        session.commit()
-        if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.url) != None:
-            logging.info("submission with gw2 link in url: " +  sm.name)
-            all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])]*', sm.url)
-            for link in all_links:
-                if link != '':
-                    try:
-                        prepare_comment(sm.name, False, guildwars2.locate_origin(link))
-                    except Exception as e:
-                        logging.error(e)
-                        session.rollback()
-        session.commit()
-
-
-def distribute_queues(comment_queue, submission_queue):
-    anet_query = list(session.query(anet_member))
-    anet_members = []
-    for member in anet_query:
-        anet_members.append(member.username)
-    try:
-        guildwars2_filter_cm(comment_queue['Guildwars2'], anet_members)
-    except KeyError as e:
-        pass
-    except Exception as e:
-        logging.error(e)
-    try:
-        guildwars2_filter_sm(submission_queue['Guildwars2'], anet_members)
-    except KeyError as e:
-        pass
-    except Exception as e:
-        logging.error(e)
 def main():
     global r    
-    logging.config.fileConfig(path_to_cfg)
+    logging.config.fileConfig(path_to_cfg,disable_existing_loggers=False)
 
     bot = Polarbyte(cfg_file)
     print(bot.enabled_subreddits)
