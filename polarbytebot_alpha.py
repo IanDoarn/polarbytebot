@@ -59,7 +59,7 @@ class CommentQueue:
                     except KeyError:
                         self.queue[cm.subreddit.display_name] = [cm]
                     else:
-                        logging.info('commentQueue: add: {0} - {1}'\
+                        logging.debug('commentQueue: add: {0} - {1}'\
                                     .format(cm.name, int(cm.id,36)))
         
     def distribute(self):
@@ -118,13 +118,16 @@ class SubmissionQueue:
                     except KeyError:
                         self.queue[subm.subreddit.display_name] = [subm]
                     else:
-                        logging.info('submissionQueue: add: {0} - {1}'
+                        logging.debug('submissionQueue: add: {0} - {1}'
                                     .format(subm.name, int(subm.id,36)))
     def distribute(self):
         arenanet_member = prepareDistribute()
         for key in self.queue:
             if key == 'Guildwars2':
                 guildwars2.process_submission(self.queue[key], arenanet_member)
+            elif key == 'test':
+                post = guildwars2.process_submission(self.queue[key], arenanet_member)
+                
         return self.queue
 
     def prepareDistribute(self):
