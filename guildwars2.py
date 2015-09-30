@@ -66,8 +66,32 @@ class p_iframe(html.parser.HTMLParser):
                         self._src = 'https:' + value
                     else:
                         self._src = value
-def process_comment():
-    
+def process_comment(comments, array_anet_names):
+    for cm in comments:
+        if cm.author.name in array_anet_names)
+            submit = {}
+            submit['type'] = 'link'
+            title = cm.link_title
+            if (len(title) + len(cm.author.name) + 3) > 300:
+                   title = title[:300 - len(cm.author.name) - 3 - 3]
+                   title += '...'
+            submit['title'] = title
+            submit['subreddit'] = 'gw2devtrack'
+            submit['content'] = cm.permalink.replace('//www.reddit.com','//np.reddit.com') + '?context=1000'
+            submitArray.append(submit)
+        continue # DISALLOWS COMMENTS TO BE PARSED FPR GW2 LINKS
+        if re.search('http.*?:\/\/.*?guildwars2.com\/', cm.body) != None:
+            logging.info("comment with gw2 link: " + cm.name)
+            all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])\s]*', cm.body)
+            for link in all_links:
+                if link != '':
+                    submit = {}
+                    submit['thing_id'] = cm.name
+                    submit['submitted'] = False
+                    submit['origin'], submit['content'] = locate_origin(url)
+                    submit['type'] = 'comment'
+                    submitArray.append(submit)
+
 def process_submission(submissions, array_anet_names):
     submitArray = []
     for sm in submissions:
@@ -89,7 +113,7 @@ def process_submission(submissions, array_anet_names):
                     submit = {}
                     submit['thing_id'] = sm.name
                     submit['submitted'] = False 
-                    submit['toLoad'] = link
+                    submit['origin'], submit['content'] = locate_origin(url)
                     submit['type'] = 'comment'
                     submitArray.append(submit)
         if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.url) != None:
@@ -99,7 +123,7 @@ def process_submission(submissions, array_anet_names):
                     submit = {}
                     submit['thing_id'] = sm.name
                     submit['submitted'] = False     
-                    submit['toLoad'] = link
+                    submit['origin'], submit['content'] = locate_origin(url)
                     submit['type'] = 'comment'
                     submitArray.append(submit)
 
@@ -107,13 +131,12 @@ def locate_origin(url):
     forum_re = re.search('http.*?:\/\/forum-..\.guildwars2.com\/forum\/', url)
     blog_re = re.search('http.*?:\/\/.{0,4}guildwars2.com\/.*?\/', url)
     if forum_re != None:
-        markdown_content = forum_parse(url)
+        return ('forum', forum_parse(url))
     elif blog_re != None:
-        markdown_content = blog_parse(url)
+        return ('blog', blog_parse(url))
     else:
-        print(url)
-        raise WrongOrigenException()
-    return markdown_content
+        return ('unknown', '')
+
 def forum_parse(url):
     post_dict = {}
     post_dict['id'] = forum_id(url)
