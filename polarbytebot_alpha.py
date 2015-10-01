@@ -268,7 +268,11 @@ def main():
     bot = Polarbyte(cfg_file)
     print(bot.enabled_subreddits)
     while(True):
-        bot.collect()
+        try:
+            bot.collect()
+        except Exception as e:
+            logging.error(e)
+            session.rollback()
      
 if __name__ == '__main__':
     main()
