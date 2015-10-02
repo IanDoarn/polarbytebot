@@ -68,7 +68,7 @@ class p_iframe(html.parser.HTMLParser):
                         self._src = value
 def process_comment(comments, array_anet_names):
     for cm in comments:
-        if cm.author.name in array_anet_names)
+        if cm.author.name in array_anet_names:
             submit = {}
             submit['type'] = 'link'
             title = cm.link_title
