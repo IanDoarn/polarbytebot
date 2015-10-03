@@ -167,7 +167,7 @@ def blog_parse(url):
     return markdown_header + markdown_content
 def forum_id(url):
     id = re.search('#post[0123456789]*$',url)
-    second_try_id = re.search('\/[0123456789]*$', url)
+    second_try_id = re.search('\/[0123456789]*\/{0,1}$', url)
     if id != None:
         id = id.group(0)[5:]
     elif second_try_id != None:
