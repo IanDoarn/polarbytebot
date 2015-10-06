@@ -147,7 +147,7 @@ def guildwars2_filter_sm(submissions, array_anet_names):
             session.add(row)
         if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.selftext) != None:
             logging.info("submission with gw2 link in selftext: " + sm.name)
-            all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])]*', sm.selftext)
+            all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])\s]*', sm.selftext)
             for link in all_links:
                 if link != '':
                     try:
