@@ -38,6 +38,8 @@ class p_img(html.parser.HTMLParser):
 class p_attachments(html.parser.HTMLParser):
     _a = []
     _tag = []
+    def __init__(self):
+        self._a = []
     def handle_starttag(self, tag, attrs):
         self._tag.append(tag)
         if tag == 'a':
@@ -267,6 +269,7 @@ def html_to_markdown(content, host):
     content = tag_h4(content)
     content = tag_h5(content)
     content = tag_h6(content)
+    content = tag_hr(content)
     content = tag_screenshot(content, host)
     content = tag_paragraph(content)
     content = tag_iframe(content, host)
@@ -396,6 +399,8 @@ def tag_h6(content):
     return content.replace('<h6>','###### ').replace('</h6>','')
 def tag_tabs(content):
     return content.replace('\t','')
+def tag_hr(content):
+    return content.replace('<hr />', '---')
 def tag_other(content):
     return (content.replace('<li class="yui3-g">'," ")
                     .replace('<div class="yui3-u-1">'," ")
