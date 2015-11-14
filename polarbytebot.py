@@ -151,7 +151,7 @@ def guildwars2_filter_sm(submissions, array_anet_names):
             for link in all_links:
                 if link != '':
                     try:
-                        prepare_comment(sm.name, False, guildwars2.locate_origin(link))
+                        prepare_comment(sm.name, False, guildwars2.locate_origin(link)[1])
                     except Exception as e:
                         session.rollback()
                         logging.error(e)
@@ -162,7 +162,7 @@ def guildwars2_filter_sm(submissions, array_anet_names):
             for link in all_links:
                 if link != '':
                     try:
-                        prepare_comment(sm.name, False, guildwars2.locate_origin(link))
+                        prepare_comment(sm.name, False, guildwars2.locate_origin(link)[1])
                     except Exception as e:
                         logging.error(e)
                         session.rollback()
@@ -243,15 +243,27 @@ def main():
             for tbcm in to_be_commented:
                 cm_obj = r.get_info(thing_id=tbcm.thing_id)
                 if tbcm.thing_id[:2] == 't3':
-                    reply_obj = cm_obj.add_comment(tbcm.content)
-                    session.query(bot_comments).filter_by(id=tbcm.id).update({'submitted':True,'submitted_id':reply_obj.name})
-                    logging.info(str(tbcm.id) + ' in bot_comments submitted')
+                    try:
+                        reply_obj = cm_obj.add_comment(tbcm.content)
+                    except (praw.errors.InvalidSubmission):
+                        session.query(bot_comments).filter_by(id=tbcm.id).update({'submitted':True,'submitted_id':"del-1"})
+                        logging.info(str(tbcm.id) + ' in bot_comments not submitted, parent deleted') 
+                    else:
+                        session.query(bot_comments).filter_by(id=tbcm.id).update({'submitted':True,'submitted_id':reply_obj.name})
+                        logging.info(str(tbcm.id) + ' in bot_comments submitted')
                 elif tbcm.thing_id[:2] == 't1':
-                    reply_obj = cm_obj.reply(tbcm.content)
-                    session.query(bot_comments).filter_by(id=tbcm.id).update({'submitted':True,'submitted_id':reply_obj.name})
-                    logging.info(str(tbcm.id) + ' in bot_comments submitted')
+                    try:
+                        reply_obj = cm_obj.reply(tbcm.content)
+                    except (praw.errors.InvalidComment):
+                        session.query(bot_comments).filter_by(id=tbcm.id).update({'submitted':True,'submitted_id':"del-1"})
+                        logging.info(str(tbcm.id) + ' in bot_comments not submitted, parent deleted')
+                    else:
+                        session.query(bot_comments).filter_by(id=tbcm.id).update({'submitted':True,'submitted_id':reply_obj.name})
+                        logging.info(str(tbcm.id) + ' in bot_comments submitted')
                 elif tbcm.thing_id[:1] == 'i':
                     new_id = session.query(bot_comments).filter_by(id=tbcm.thing_id[1:]).first().submitted_id
+                    if new_id == "del-1":
+                        session.query(bot_comments).filter_by(id=tbcm.id).update({'submitted':True,'submitted_id':'del-1'})
                     if new_id != None:
                         session.query(bot_comments).filter_by(id=tbcm.id).update({'thing_id':new_id})
                 session.commit()

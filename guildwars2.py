@@ -79,6 +79,7 @@ def process_comment(comments, array_anet_names):
                    title += '...'
             submit['title'] = title
             submit['subreddit'] = 'gw2devtrack'
+            submit['submitted'] = False
             submit['content'] = cm.permalink.replace('//www.reddit.com','//np.reddit.com') + '?context=1000'
             submitArray.append(submit)
         continue # DISALLOWS COMMENTS TO BE PARSED FPR GW2 LINKS
@@ -93,18 +94,22 @@ def process_comment(comments, array_anet_names):
                     submit['origin'], submit['content'] = locate_origin(url)
                     submit['type'] = 'comment'
                     submitArray.append(submit)
+    return submitArray
 
 def process_submission(submissions, array_anet_names):
     submitArray = []
+    print(len(submissions))
     for sm in submissions:
         if sm.author.name in array_anet_names:
             submit = {}
             submit['type'] = 'link'
             title = sm.title
-            if (len(title) + len(sm.author.name) + 3) > 300:
-                   title = title[:300 - len(sm.author.name) - 3 - 3]
-                   title += '...'
+            if len(title) + len(sm.author.name) + len(' []') > 300:
+                title = '{0}... [{1}]'.format(title[:300 - len(sm.author.name) - len(' []') - len('...')], sm.author.name)
+            else:
+                title = '{0} [{1}]'.format(title, sm.author.name)
             submit['title'] = title
+            submit['submitted'] = False
             submit['subreddit'] = 'gw2devtrack'
             submit['content'] = sm.permalink.replace('//www.reddit.com','//np.reddit.com') + '?context=1000'
             submitArray.append(submit)
@@ -122,12 +127,14 @@ def process_submission(submissions, array_anet_names):
             all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])]*', sm.url)
             for link in all_links:
                 if link != '':
+                    print(link)
                     submit = {}
                     submit['thing_id'] = sm.name
                     submit['submitted'] = False     
-                    submit['origin'], submit['content'] = locate_origin(url)
+                    submit['origin'], submit['content'] = locate_origin(link)
                     submit['type'] = 'comment'
                     submitArray.append(submit)
+    return submitArray
 
 def locate_origin(url):
     forum_re = re.search('http.*?:\/\/forum-..\.guildwars2.com\/forum\/', url)
@@ -277,6 +284,7 @@ def html_to_markdown(content, host):
     content = tag_img(content, host)
     content = tag_quote(content, host)
     content = tag_spoiler(content, host)
+    content = tag_object(content)
     content = content.strip('\n')    
     content = '>' + content.replace('\n','\n>')
     content = tag_other(content)
@@ -369,8 +377,15 @@ def tag_screenshot(content, host):
             parser.feed(re_ss)
             content = content.replace(re_ss, parser._src + '\n')
     return content
+def tag_object(content):
+    re_objFlashs = re.findall('<object type="application\/x-shockwave-flash".*?>.*?<\/object>', content)
+    for re_objFlash in re_objFlashs:
+        if re_objFlash != '':
+            content = content.replace(re_objFlash, '')
+    return content
 def tag_bold(content):
-    return content.replace('<strong>','**').replace('</strong>','**')
+    return content.replace('<strong>','**').replace('</strong>','**')\
+            .replace('<b>','**').replace('</b>','**')
 def tag_italic(content):
     return content.replace('<em>','*').replace('</em>','*')
 def tag_list(content):
