@@ -98,7 +98,6 @@ def process_comment(comments, array_anet_names):
 
 def process_submission(submissions, array_anet_names):
     submitArray = []
-    print(len(submissions))
     for sm in submissions:
         if sm.author.name in array_anet_names:
             submit = {}
@@ -127,7 +126,6 @@ def process_submission(submissions, array_anet_names):
             all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])]*', sm.url)
             for link in all_links:
                 if link != '':
-                    print(link)
                     submit = {}
                     submit['thing_id'] = sm.name
                     submit['submitted'] = False     
