@@ -162,7 +162,11 @@ class Polarbyte:
         self.enabled_subreddits = [e.strip() for e in\
                                      cfg_file['reddit']['enabled_subreddits']\
                                       .split(',')]
+        self.forceAuthenticationAgain = True
         self.authenticate()
+    def check(self):
+        if self.forceAuthenticationAgain:
+            self.authenticate()
 
     def authenticate(self):
         global r
@@ -172,8 +176,10 @@ class Polarbyte:
                                  redirect_uri = self.OAuth2['redirect_uri'])
             r.refresh_access_information(self.OAuth2['refresh_token'])
         except Exception as e:
+            self.forceAuthenticationAgain = True
             logging.error('OAuth2: failed: {0}'.format(e))
         else:
+            self.forceAuthenticationAgain = False
             logging.info('OAuth2 authenticated')
 
     def collect(self):
@@ -290,15 +296,18 @@ def main():
     global r   
     logging.config.fileConfig(path_to_cfg,disable_existing_loggers=False)
     bot = Polarbyte(cfg_file)
-
+    forceAuthAgain = False
     while(True):
         try:
+            bot.check()
             bot.collect()
             bot.processPosts()
             bot.submit()
-        #except 
+        except praw.errors.OAuthScopeRequired as e:
+            logging.error(e)
+            bot.forceAuthenticationAgain = True
         except Exception as e:
-            print(vars(e))
+            #print(vars(e))
             logging.error(e)
             session.rollback()
      

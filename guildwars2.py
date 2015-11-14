@@ -174,20 +174,46 @@ def blog_parse(url):
     markdown_header = '[BLOG] [' + post_dict['name'] + ' posted on ' + post_dict['datetime'] + '](' + url + '):\n'
     markdown_content = html_to_markdown(post_dict['text'], parse_host_from_url(url))
     return markdown_header + markdown_content
+
 def forum_id(url):
-    id = re.search('#post[0123456789]*$',url)
-    second_try_id = re.search('\/[0123456789]*\/{0,1}$', url)
-    if id != None:
-        id = id.group(0)[5:]
-    elif second_try_id != None:
-        id = id.group(0)[1:]
+    urlInformation = re.search('https?:\/\/forum-..\.guildwars2.com(?P<forum>\/forum)(?P<headforum>\/[^\/]*)(?P<subforum>\/[^\/]*)(?P<title>\/[^\/]*)((?P<identifier1>\/[^\/#]*)|)((?P<identifier2>(#|\/)[^\/#]*)|)((?P<identifier3>(#|\/)[^\/#]*)|)',url)
+    identifier1 = urlInformation.group('identifier1')
+    identifier2 = urlInformation.group('identifier2')
+    identifier3 = urlInformation.group('identifier3')
+    #https://forum-en.guildwars2.com/forum/headforum/subforum/title
+    #https://forum-en.guildwars2.com/forum/headforum/subforum/title/
+    if identifier1 == '/' or identifier1 == None:
+        return forum_getFirstId(url)
+    #https://forum-en.guildwars2.com/forum/headforum/subforum/title/first
+    elif identifier1 == '/first' and (identifier2 == None or identifier2 == '/'):
+        return forum_getFirstId(url)
+    #https://forum-en.guildwars2.com/forum/headforum/subforum/title/first#post1234567
+    elif identifier1 == '/first' and identifier2[:5] == '#post':
+        return identifier2[5:]
+    #Following *should* not happen, but who knows - maybe someone links like this
+    #https://forum-en.guildwars2.com/forum/headforum/subforum/title/first/2#post1234567
+    elif identifier1 == '/first' and identifier2[:1] == '/' and identifier3[:5] == '#post':
+        return identifier3[5:]
+    #https://forum-en.guildwars2.com/forum/headforum/subforum/title/page/1
+    elif identifier1 == '/page' and identifier2[1:].isdigit() and identifier3 == None:
+        return forum_getFirstId(url)
+    #https://forum-en.guildwars2.com/forum/headforum/subforum/title/page/1#post1234567
+    elif identifier1 == '/page' and identifier2[1:].isdigit() and identifier3[:5] == '#post':
+        return identifier3[5:]
+    #https://forum-en.guildwars2.com/forum/headforum/subforum/title/1234567
+    elif identifier1[1:].isdigit() and identifier2 == None and identifier3 == None:
+        return identifier1[1:]
     else:
-        req = requests_get(url)
-        id = re.search("' id='post[0123456789]*'>",req.text)
-        if id != None:
-            id = id.group(0)
-            id = id[10:len(id)-2]
+        return forum_getFirstId(url)
+    
+def forum_getFirstId(url):
+    req = requests_get(url)
+    id = re.search("' id='post[0123456789]*'>",req.text)
+    if id != None:
+        id = id.group(0)
+        id = id[10:len(id)-2]
     return id
+    
 def requests_get(url):
     counter = 0
     while(True):
