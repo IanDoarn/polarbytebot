@@ -240,14 +240,10 @@ class Polarbyte:
             content_parts = _content.split('\n')
             stiched_content = ''
             for part in content_parts:
-                logging.info(len(stiched_content) + len(part+'\n') + extra_len)
                 if len(stiched_content) + len(part+'\n') + extra_len <= 10000:
-                    logging.info('entered')
                     stiched_content += part+'\n'
                 else:
-                    logging.info('break')
                     break
-            logging.info('real break')
             row = bot_comments()
             row.thing_id = last_id
             row.submitted = _submitted
