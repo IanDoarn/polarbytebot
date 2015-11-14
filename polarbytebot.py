@@ -29,7 +29,6 @@ class CommentQueue:
     Loads up to 1000 comments since last processing.
     """
     def populate(self):
-        logging.debug(self.botname)
         global r
         try:
             self.last_comment_id = session.query(subreddit)\
@@ -53,7 +52,6 @@ class CommentQueue:
                                             'repaired: {0}'\
                                             .format(int(cm.id,36)))
                         t_last_comment_id = int(cm.id,36)
-                        logging.debug("t_cm_id: " +  str(t_last_comment_id))
                         self.first_comment = True
                     if int(cm.id,36) <= self.last_comment_id:
                         self.last_comment_id = t_last_comment_id
