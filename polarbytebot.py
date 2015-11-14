@@ -43,6 +43,8 @@ class CommentQueue:
             for cm in comments:
                 if cm.author == None:
                     self.last_comment_id = t_last_comment_id
+                    logging.warning('CommentQueue: forced return on {0}'\
+                                         .format(self.last_comment_id))
                     return self
                 if cm.author.name != self.botname:
                     if not self.first_comment:
@@ -60,7 +62,7 @@ class CommentQueue:
                         self.queue[cm.subreddit.display_name].append(cm)
                     except KeyError:
                         self.queue[cm.subreddit.display_name] = [cm]
-                    else:
+                    finally:
                         logging.debug('commentQueue: add: {0} - {1}'\
                                     .format(cm.name, int(cm.id,36)))
         
@@ -109,6 +111,8 @@ class SubmissionQueue:
             for subm in submissions:
                 if subm.author == None:
                     self.last_submission_id = t_last_submission_id
+                    logging.warning('SubmissionQueue: forced return on {0}'\
+                                         .format(self.last_submission_id))
                     return self
                 if subm.author.name != self.botname:
                     if not self.first_submission:
@@ -126,16 +130,13 @@ class SubmissionQueue:
                         self.queue[subm.subreddit.display_name].append(subm)
                     except KeyError:
                         self.queue[subm.subreddit.display_name] = [subm]
-                    else:
+                    finally:
                         logging.debug('submissionQueue: add: {0} - {1}'
                                     .format(subm.name, int(subm.id,36)))
     def distribute(self):
         arenanet_member = self.prepareDistribute()
         for key in self.queue:
             if key == 'Guildwars2':
-                for post in guildwars2.process_submission(self.queue[key],arenanet_member):
-                    self.produced_posts.append(post)
-            elif key == 'test':                
                 for post in guildwars2.process_submission(self.queue[key],arenanet_member):
                     self.produced_posts.append(post)
         return self
