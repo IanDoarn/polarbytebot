@@ -205,15 +205,27 @@ class Polarbyte:
         for tbcm in to_be_commented:
             obj = r.get_info(thing_id=tbcm.thing_id)
             if tbcm.thing_id[:2] == 't3':
-                reply_obj = obj.add_comment(tbcm.content)
-                self.updateSubmitted(bot_comments, tbcm.id, reply_obj.name)
-                logging.info('submitComment: submit: {0}'.format(tbcm.id))
+                try:
+                    reply_obj = obj.add_comment(tbcm.content)
+                except (praw.errors.InvalidSubmission):
+                    self.updateSubmitted(bot_comments, tbcm.id, 'del-1')
+                    logging.warning('submitComment: failed (parentDeleted): {0}'.format(tbcm.id))
+                else:
+                    self.updateSubmitted(bot_comments, tbcm.id, reply_obj.name)
+                    logging.info('submitComment: submit: {0}'.format(tbcm.id))
             elif tbcm.thing_id[:2] == 't1':
-                reply_obj = obj.reply(tbcm.content)
-                self.updateSubmitted(bot_comments, tbcm.id, reply_obj.name)
-                logging.info('submitComment: submit: {0}'.format(tbcm.id))
+                try:
+                    reply_obj = obj.reply(tbcm.content)
+                except (praw.errors.InvalidComment):
+                    self.updateSubmitted(bot_comments, tbcm.id, 'del-1')
+                    logging.warning('submitComment: failed (parentDeleted): {0}'.format(tbcm.id))
+                else:
+                    self.updateSubmitted(bot_comments, tbcm.id, reply_obj.name)
+                    logging.info('submitComment: submit: {0}'.format(tbcm.id))
             elif tbcm.thing_id[:1] == 'i':
                 new_id = self.searchSubmitted(bot_comments, tbcm.thing_id[1:])
+                if new_id == 'del-1':
+                    self.updateSubmitted(bot_comments, tbcm.id, 'del-1')
                 if new_id != None:
                     self.updateThingId(bot_comments, tbcm.id, new_id)
             session.commit()
