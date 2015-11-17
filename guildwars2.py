@@ -69,6 +69,7 @@ class p_iframe(html.parser.HTMLParser):
                     else:
                         self._src = value
 def process_comment(comments, array_anet_names):
+    submitArray = []
     for cm in comments:
         if cm.author.name in array_anet_names:
             submit = {}
@@ -113,13 +114,13 @@ def process_submission(submissions, array_anet_names):
             submit['content'] = sm.permalink.replace('//www.reddit.com','//np.reddit.com') + '?context=1000'
             submitArray.append(submit)
         if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.selftext) != None:
-            all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])]*', sm.selftext)
+            all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])\s]*', sm.selftext)
             for link in all_links:
                 if link != '':
                     submit = {}
                     submit['thing_id'] = sm.name
                     submit['submitted'] = False 
-                    submit['origin'], submit['content'] = locate_origin(url)
+                    submit['origin'], submit['content'] = locate_origin(link)
                     submit['type'] = 'comment'
                     submitArray.append(submit)
         if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.url) != None:
@@ -135,14 +136,18 @@ def process_submission(submissions, array_anet_names):
     return submitArray
 
 def locate_origin(url):
-    forum_re = re.search('http.*?:\/\/forum-..\.guildwars2.com\/forum\/', url)
-    blog_re = re.search('http.*?:\/\/.{0,4}guildwars2.com\/.*?\/', url)
-    if forum_re != None:
-        return ('forum', forum_parse(url))
-    elif blog_re != None:
-        return ('blog', blog_parse(url))
-    else:
-        return ('unknown', '')
+    try:
+        forum_re = re.search('http.*?:\/\/forum-..\.guildwars2.com\/forum\/', url)
+        blog_re = re.search('http.*?:\/\/.{0,4}guildwars2.com\/.*?\/', url)
+        if forum_re != None:
+            return ('forum', forum_parse(url))
+        elif blog_re != None:
+            return ('blog', blog_parse(url))
+        else:
+            return ('unknown', '')
+    except Exception as e:
+        print(e)
+        return ('error: {0}'.format(url), '')
 
 def forum_parse(url):
     post_dict = {}
@@ -174,7 +179,7 @@ def blog_parse(url):
     return markdown_header + markdown_content
 
 def forum_id(url):
-    urlInformation = re.search('https?:\/\/forum-..\.guildwars2.com(?P<forum>\/forum)(?P<headforum>\/[^\/]*)(?P<subforum>\/[^\/]*)(?P<title>\/[^\/]*)((?P<identifier1>\/[^\/#]*)|)((?P<identifier2>(#|\/)[^\/#]*)|)((?P<identifier3>(#|\/)[^\/#]*)|)',url)
+    urlInformation = re.search('https?:\/\/forum-..\.guildwars2.com(?P<forum>\/forum)(?P<headforum>\/[^\/]*)(?P<subforum>\/[^\/]*)(?P<title>\/[^\/]*)((?P<identifier1>\/[^\/#\s]*)|)((?P<identifier2>(#|\/)[^\/#\s]*)|)((?P<identifier3>(#|\/)[^\/#\s]*)|)',url)
     identifier1 = urlInformation.group('identifier1')
     identifier2 = urlInformation.group('identifier2')
     identifier3 = urlInformation.group('identifier3')
@@ -210,6 +215,8 @@ def forum_getFirstId(url):
     if id != None:
         id = id.group(0)
         id = id[10:len(id)-2]
+    else:
+        id = '0'
     return id
     
 def requests_get(url):

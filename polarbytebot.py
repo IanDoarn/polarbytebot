@@ -69,7 +69,7 @@ class CommentQueue:
     def distribute(self):
         arenanet_member = self.prepareDistribute()
         for key in self.queue:
-            if key == 'Guildwars2':
+            if key == 'Guildwars2' or key.lower() == 'test':
                 for post in guildwars2.process_comment(self.queue[key],arenanet_member):
                     self.produced_posts.append(post)
         return self
@@ -136,7 +136,7 @@ class SubmissionQueue:
     def distribute(self):
         arenanet_member = self.prepareDistribute()
         for key in self.queue:
-            if key == 'Guildwars2':
+            if key == 'Guildwars2' or key.lower() == 'test':
                 for post in guildwars2.process_submission(self.queue[key],arenanet_member):
                     self.produced_posts.append(post)
         return self
@@ -193,6 +193,8 @@ class Polarbyte:
                 self.addSubmission(post['subreddit'], post['title'], post['content'], post['type'], post['submitted'])
             elif post['type'] == 'comment':
                 self.addComment(post['thing_id'], post['content'], post['submitted'])
+            else:
+                logging.warning("unknown type: {0}".format(post['type']))
 
     def submit(self):
         self.submitComments()
@@ -233,14 +235,23 @@ class Polarbyte:
         global r
         to_be_submitted = session.query(bot_submissions).filter_by(submitted=False).all()
         for tbsm in to_be_submitted:
-            if tbsm.type == 'link':
-                sub_obj = r.submit(tbsm.subreddit, tbsm.title, url=tbsm.content)
-            elif tbsm.type == 'self':
-                sub_obj = r.submit(tbsm.subreddit, tbsm.title, text=tbsm.content)
-            #session.query(bot_submissions).filter_by(id=tbsm.id).update({'submitted':True})
-            self.updateSubmitted(bot_submissions, tbsm.id, sub_obj.id)
-            logging.info('submitSubmission: submit: {0}'.format(tbsm.id))
-            session.commit()
+            try:
+                if tbsm.type == 'link':
+                    sub_obj = r.submit(tbsm.subreddit, tbsm.title, url=tbsm.content)
+                elif tbsm.type == 'self':
+                    sub_obj = r.submit(tbsm.subreddit, tbsm.title, text=tbsm.content)
+                #session.query(bot_submissions).filter_by(id=tbsm.id).update({'submitted':True})
+                self.updateSubmitted(bot_submissions, tbsm.id, None)
+                logging.info('SubmitSubmission: submit: {0}'.format(tbsm.id))
+                session.commit()
+            except Exception as e:
+                if tbsm.type == 'link':
+                    logging.error('SubmitSubmissions: {0} on-id {1} on-url {2}'.format(e,tbsm.id,tbsm.content))
+                else:
+                    logging.error('SubmitSubmissions: {0} on-id {1}'.format(e,tbsm.id))
+                self.updateSubmitted(bot_submissions, tbsm.id, None)
+                logging.info('SubmitSubmission: failed-submit: {0}'.format(tbsm.id))
+                session.commit()
 
     def addComment(self, _thing_id, _content, _submitted=False):
         last_id = _thing_id
@@ -290,8 +301,12 @@ class Polarbyte:
                 .update({'last_submission':_last_submission_id,\
                          'last_comment':_last_comment_id})
     def updateSubmitted(self, _table, _search_id, _submit_id):
-        session.query(_table).filter_by(id=_search_id)\
-            .update({'submitted':True,'submitted_id':_submit_id})
+        if(_submit_id != None):
+            session.query(_table).filter_by(id=_search_id)\
+                .update({'submitted':True,'submitted_id':_submit_id})
+        else:
+            session.query(_table).filter_by(id=_search_id)\
+                .update({'submitted':True})
     def searchSubmitted(self, _table, _search_id):
         return session.query(_table).filter_by(id=_search_id).first().submitted_id
     def updateThingId(self, _table, _search_id, _new_id):
