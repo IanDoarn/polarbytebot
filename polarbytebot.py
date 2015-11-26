@@ -188,7 +188,7 @@ class Polarbyte:
         session.commit()
 
     def processPosts(self):
-        for post in self.smQueue.produced_posts:
+        for post in self.smQueue.produced_posts+self.cmQueue.produced_posts:
             if post['type'] == 'link' or  post['type'] == 'self':
                 self.addSubmission(post['subreddit'], post['title'], post['content'], post['type'], post['submitted'])
             elif post['type'] == 'comment':

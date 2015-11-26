@@ -75,9 +75,10 @@ def process_comment(comments, array_anet_names):
             submit = {}
             submit['type'] = 'link'
             title = cm.link_title
-            if (len(title) + len(cm.author.name) + 3) > 300:
-                   title = title[:300 - len(cm.author.name) - 3 - 3]
-                   title += '...'
+            if len(title) + len(cm.author.name) + len(' []') > 300:
+                title = '{0}... [{1}]'.format(title[:300 - len(cm.author.name) - len(' []') - len('...')], cm.author.name)
+            else:
+                title = '{0} [{1}]'.format(title, cm.author.name)
             submit['title'] = title
             submit['subreddit'] = 'gw2devtrack'
             submit['submitted'] = False
