@@ -147,7 +147,9 @@ def locate_origin(url):
         else:
             return ('unknown', '')
     except Exception as e:
-        print(e)
+        errormsg = 'error::guildwars2::locate_origin:{0} :on: {1}'.format(e,url)
+        print(errormsg)
+        with open('gw2urlerror','a') as f: f.write(errormsg)
         return ('error: {0}'.format(url), '')
 
 def forum_parse(url):
