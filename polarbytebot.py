@@ -69,7 +69,7 @@ class CommentQueue:
     def distribute(self):
         arenanet_member = self.prepareDistribute()
         for key in self.queue:
-            if key == 'Guildwars2' or key.lower() == 'test' or key.lower() == "gw2economy"::
+            if key == 'Guildwars2' or key.lower() == 'test' or key.lower() == "gw2economy":
                 for post in guildwars2.process_comment(self.queue[key],arenanet_member):
                     self.produced_posts.append(post)
         return self
