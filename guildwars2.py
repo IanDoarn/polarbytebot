@@ -103,8 +103,22 @@ def process_comment(comments, array_anet_names):
             submit['title'] = title
             submit['subreddit'] = 'gw2devtrack'
             submit['submitted'] = False
-            submit['content'] = cm.permalink.replace('//www.reddit.com', '//np.reddit.com') + '?context=1000'
+            submit['content'] = cm.permalink + '?context=1000'
             submitArray.append(submit)
+
+            submit = {}
+            submit['type'] = 'self'
+            title = cm.link_title
+            if len(title) + len(cm.author.name) + len(' []') > 300:
+                title = '{0}... [{1}]'.format(title[:300 - len(cm.author.name) - len(' []') - len('...')], cm.author.name)
+            else:
+                title = '{0} [{1}]'.format(title, cm.author.name)
+            submit['title'] = title
+            submit['subreddit'] = 'gw2devtrackalt'
+            submit['submitted'] = False
+            submit['content'] = '{0}\n\n{1}?context=1000'.format(cm.body, sm.permalink)
+            submitArray.append(submit)
+
         continue  # DISALLOWS COMMENTS TO BE PARSED FPR GW2 LINKS
         if re.search('http.*?:\/\/.*?guildwars2.com\/', cm.body) != None:
             logging.info("comment with gw2 link: " + cm.name)
@@ -134,8 +148,22 @@ def process_submission(submissions, array_anet_names):
             submit['title'] = title
             submit['submitted'] = False
             submit['subreddit'] = 'gw2devtrack'
-            submit['content'] = sm.permalink.replace('//www.reddit.com', '//np.reddit.com') + '?context=1000'
+            submit['content'] = sm.permalink + '?context=1000'
             submitArray.append(submit)
+
+            submit = {}
+            submit['type'] = 'self'
+            title = sm.title
+            if len(title) + len(sm.author.name) + len(' []') > 300:
+                title = '{0}... [{1}]'.format(title[:300 - len(sm.author.name) - len(' []') - len('...')], sm.author.name)
+            else:
+                title = '{0} [{1}]'.format(title, sm.author.name)
+            submit['title'] = title
+            submit['submitted'] = False
+            submit['subreddit'] = 'gw2devtrackalt'
+            submit['content'] = '{0}\n\n{1}?context=1000'.format(sm.selftext, sm.permalink)
+            submitArray.append(submit)
+
         if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.selftext) != None:
             all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])\s]*', sm.selftext)
             for link in all_links:
