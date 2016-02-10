@@ -116,7 +116,7 @@ def process_comment(comments, array_anet_names):
             submit['title'] = title
             submit['subreddit'] = 'gw2devtrackalt'
             submit['submitted'] = False
-            submit['content'] = '{0}\n\n{1}?context=1000'.format(cm.body, sm.permalink)
+            submit['content'] = '{0}\n\n{1}?context=1000'.format(cm.body, cm.permalink)
             submitArray.append(submit)
 
         continue  # DISALLOWS COMMENTS TO BE PARSED FPR GW2 LINKS
