@@ -7,7 +7,7 @@ import guildwars2
 #import webbrowser
 
 from datetime import datetime
-from models import bot_comments, bot_submissions, subreddit, anet_member
+from models import bot_comments, bot_submissions, subreddit, anet_member, bot_comments_anetpool
 from models import session, cfg_file, path_to_cfg
 from sqlalchemy import desc
 
@@ -155,6 +155,7 @@ class Polarbyte:
         self.OAuth2 = cfg_file['oauth2']
         r = praw.Reddit(cfg_file['reddit']['user_agent'])
         self.signature = cfg_file['reddit']['signature']
+        self.anetpool_template = cfg_file['reddit']['anetpool_template']
         self.botname = cfg_file['oauth2']['username']
         self.enabled_subreddits = [e.strip() for e in\
                                      cfg_file['reddit']['enabled_subreddits']\
@@ -189,16 +190,19 @@ class Polarbyte:
 
     def processPosts(self):
         for post in self.smQueue.produced_posts+self.cmQueue.produced_posts:
-            if post['type'] == 'link' or  post['type'] == 'self':
+            if post['type'] == 'link' or post['type'] == 'self':
                 self.addSubmission(post['subreddit'], post['title'], post['content'], post['type'], post['submitted'])
             elif post['type'] == 'comment':
                 self.addComment(post['thing_id'], post['content'], post['submitted'])
+            elif post['type'] == 'edit':
+                self.addEdit(post['thread_id'], post['content'], post['submitted'])
             else:
                 logging.warning("unknown type: {0}".format(post['type']))
 
     def submit(self):
         self.submitComments()
         self.submitSubmissions()
+        self.submitEdits()
 
     def submitComments(self):
         global r
@@ -253,6 +257,32 @@ class Polarbyte:
                 logging.info('SubmitSubmission: failed-submit: {0}'.format(tbsm.id))
                 session.commit()
 
+    def submitEdits(self):
+        global r
+        to_be_edited = session.query(bot_comments_anetpool).filter_by(submitted=False).all()
+        for tbe in to_be_edited:
+            if tbe.submitted_id is None:
+                obj = r.get_info(thing_id=tbe.thread_id)
+                try:
+                    reply_obj = obj.add_comment(tbe.content)
+                except (praw.errors.InvalidSubmission):
+                    self.updateEdited(bot_comments_anetpool, tbe.thread_id, 'del-1')
+                    logging.warning('submitEdit: failed (parentDeleted): {0}'.format(tbe.thread_id))
+                else:
+                    self.updateEdited(bot_comments_anetpool, tbe.thread_id, reply_obj.name)
+                    logging.info('submitEdit: submit: {0}'.format(tbe.thread_id))
+            else:
+                obj = r.get_info(thing_id=tbe.submitted_id)
+                try:
+                    reply_obj = obj.edit(tbe.content)
+                except (praw.errors.InvalidComment):
+                    self.updateEdited(bot_comments_anetpool, tbe.thread_id, 'del-1')
+                    logging.warning('submitEdit: failed (commentDeleted): {0}'.format(tbe.thread_id))
+                else:
+                    self.updateEdited(bot_comments_anetpool, tbe.thread_id)
+                    logging.info('submitEdit: submit: {0}'.format(tbe.thread_id))
+            session.commit()
+
     def addComment(self, _thing_id, _content, _submitted=False):
         last_id = _thing_id
         extra_len = len('\n\n--- continued below ---') + len(self.signature)
@@ -287,7 +317,21 @@ class Polarbyte:
         row.submitted = _submitted
         session.add(row)
         session.commit()
-    
+
+    def addEdit(self, _thread_id, _content, _submitted=False):
+        existingList = session.query(bot_comments_anetpool).filter_by(thread_id=_thread_id).first()
+        if existingList is None:
+            row = bot_comments_anetpool()
+            row.thread_id = _thread_id
+            _from_template = self.anetpool_template.split('&#009;', 1)
+            row.content = _from_template[0] +  _content + '&#009;' + _from_template[1]
+            row.submitted = _submitted
+            session.add(row)
+        else:
+            _from_save = existingList.content.split('&#009;', 1)
+            session.query(bot_comments_anetpool).filter_by(thread_id=_thread_id).update({'content': _from_save[0] +  _content + '&#009;' + _from_save[1],'submitted':False})
+        session.commit()
+
     def updateLatestObjectIds(self, _last_comment_id, _last_submission_id):
         lastIds = session.query(subreddit).filter_by(website='reddit').first()
         if lastIds == None:
@@ -300,17 +344,29 @@ class Polarbyte:
             session.query(subreddit).filter_by(website='reddit')\
                 .update({'last_submission':_last_submission_id,\
                          'last_comment':_last_comment_id})
-    def updateSubmitted(self, _table, _search_id, _submit_id):
+
+    def updateSubmitted(self, _table, _search_id, _submit_id=None):
         if(_submit_id != None):
             session.query(_table).filter_by(id=_search_id)\
                 .update({'submitted':True,'submitted_id':_submit_id})
         else:
             session.query(_table).filter_by(id=_search_id)\
                 .update({'submitted':True})
+
+    def updateEdited(self, _table, _search_id, _submit_id=None):
+        if(_submit_id != None):
+            session.query(_table).filter_by(thread_id=_search_id)\
+                .update({'submitted':True,'submitted_id':_submit_id})
+        else:
+            session.query(_table).filter_by(thread_id=_search_id)\
+                .update({'submitted':True})
+
     def searchSubmitted(self, _table, _search_id):
         return session.query(_table).filter_by(id=_search_id).first().submitted_id
+
     def updateThingId(self, _table, _search_id, _new_id):
         session.query(_table).filter_by(id=_search_id).update({'thing_id':_new_id})
+
 
 def main():
     global r   
@@ -330,6 +386,7 @@ def main():
             #print(vars(e))
             logging.error(e)
             session.rollback()
-     
+
+
 if __name__ == '__main__':
     main()

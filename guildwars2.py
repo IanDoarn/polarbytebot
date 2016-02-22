@@ -2,6 +2,7 @@ import html.parser
 import re
 import requests
 import urllib.parse
+import datetime
 
 
 class p_href(html.parser.HTMLParser):
@@ -117,6 +118,13 @@ def process_comment(comments, array_anet_names):
             submit['subreddit'] = 'gw2devtrackalt'
             submit['submitted'] = False
             submit['content'] = '{0}\n\n{1}?context=1000'.format(cm.body, cm.permalink)
+            submitArray.append(submit)
+
+            submit = {}
+            submit['thread_id'] = cm.link_id
+            submit['type'] = 'edit'
+            submit['submitted'] = False
+            submit['content'] = '\n\n* [Comment by {0}]({1}) - {2}'.format(cm.author.name, cm.permalink, datetime.datetime.fromtimestamp(cm.created_utc,datetime.timezone.utc).isoformat(' '))
             submitArray.append(submit)
 
         continue  # DISALLOWS COMMENTS TO BE PARSED FPR GW2 LINKS

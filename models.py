@@ -35,6 +35,14 @@ class anet_member(Base):
     __tablename__ = 'anet_member'
     username = Column(String(50), primary_key=True)
 
+class bot_comments_anetpool(Base):
+    __tablename__ = 'bot_comments_anetpool'
+    thread_id = Column(String(15), primary_key=True)
+    content = Column(String(10000), nullable=False)
+    submitted = Column(Boolean, nullable=False)
+    submitted_id = Column(String(15))
+
+
 cfg_file = configparser.ConfigParser()
 path_to_cfg = os.path.abspath(os.path.dirname(sys.argv[0]))
 path_to_cfg = os.path.join(path_to_cfg, 'polarbytebot.cfg')
