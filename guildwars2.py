@@ -246,14 +246,17 @@ def blog_parse(url):
 
 
 def forum_id(url):
-    urlInformation = re.search('https?:\/\/forum-..\.guildwars2.com(?P<forum>\/forum)(?P<headforum>\/[^\/]*)(?P<subforum>\/[^\/]*)(?P<title>\/[^\/]*)((?P<identifier1>\/[^\/#\s]*)|)((?P<identifier2>(#|\/)[^\/#\s]*)|)((?P<identifier3>(#|\/)[^\/#\s]*)|)', url)
+    urlInformation = re.search('https?:\/\/forum-..\.guildwars2.com(?P<forum>\/forum)(?P<headforum>\/[^\/]*)(?P<subforum>\/[^\/]*)(?P<title>\/[^\/#]*)((?P<identifier1>\/[^\/#\s]*)|)((?P<identifier2>(#|\/)[^\/#\s]*)|)((?P<identifier3>(#|\/)[^\/#\s]*)|)', url)
     identifier1 = urlInformation.group('identifier1')
     identifier2 = urlInformation.group('identifier2')
     identifier3 = urlInformation.group('identifier3')
     # https://forum-en.guildwars2.com/forum/headforum/subforum/title
     # https://forum-en.guildwars2.com/forum/headforum/subforum/title/
-    if identifier1 == '/' or identifier1 is None:
+    if (identifier1 == '/' or identifier1 is None) and identifier2 is None:
         return forum_getFirstId(url)
+    #https://forum-en.guildwars2.com/forum/headforum/subforum/title#post1234567
+    elif identifier1 == None and identifier2[:5] == '#post':
+        return identifier2[5:]
     # https://forum-en.guildwars2.com/forum/headforum/subforum/title/first
     elif identifier1 == '/first' and (identifier2 is None or identifier2 == '/'):
         return forum_getFirstId(url)
