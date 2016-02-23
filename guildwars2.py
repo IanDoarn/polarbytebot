@@ -271,7 +271,8 @@ def forum_id(url):
     elif identifier1 == '/page' and identifier2[1:].isdigit() and identifier3 is None:
         return forum_getFirstId(url)
     # https://forum-en.guildwars2.com/forum/headforum/subforum/title/page/1#post1234567
-    elif identifier1 == '/page' and identifier2[1:].isdigit() and identifier3[:5] == '#post':
+    # https://forum-en.guildwars2.com/forum/headforum/subforum/title/page/1/post1234567
+    elif identifier1 == '/page' and identifier2[1:].isdigit() and (identifier3[:5] == '#post' or identifier3[:5] == '/post'):
         return identifier3[5:]
     # https://forum-en.guildwars2.com/forum/headforum/subforum/title/1234567
     elif identifier1[1:].isdigit() and identifier2 is None and identifier3 is None:
