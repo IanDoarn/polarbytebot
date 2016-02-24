@@ -94,6 +94,7 @@ def process_comment(comments, array_anet_names):
     submitArray = []
     for cm in comments:
         if cm.author.name in array_anet_names:
+            # submission to devtracker subreddit
             submit = {}
             submit['type'] = 'link'
             title = cm.link_title
@@ -106,7 +107,7 @@ def process_comment(comments, array_anet_names):
             submit['submitted'] = False
             submit['content'] = cm.permalink + '?context=1000'
             submitArray.append(submit)
-
+            # submission to alternative devtracker subreddit
             submit = {}
             submit['type'] = 'self'
             title = cm.link_title
@@ -119,26 +120,25 @@ def process_comment(comments, array_anet_names):
             submit['submitted'] = False
             submit['content'] = '{0}\n\n{1}?context=1000'.format(cm.body, cm.permalink)
             submitArray.append(submit)
-
+            # anet-comment-pool
             submit = {}
             submit['thread_id'] = cm.link_id
             submit['type'] = 'edit'
             submit['submitted'] = False
-            submit['content'] = '\n\n* [Comment by {0}]({1}) - {2}'.format(cm.author.name, cm.permalink, datetime.datetime.fromtimestamp(cm.created_utc,datetime.timezone.utc).isoformat(' '))
+            submit['content'] = '\n\n* [Comment by {0}]({1}?context=1000) - {2}'.format(cm.author.name, cm.permalink, datetime.datetime.fromtimestamp(cm.created_utc,datetime.timezone.utc).isoformat(' '))
             submitArray.append(submit)
 
-        continue  # DISALLOWS COMMENTS TO BE PARSED FPR GW2 LINKS
-        if re.search('http.*?:\/\/.*?guildwars2.com\/', cm.body) != None:
-            logging.info("comment with gw2 link: " + cm.name)
-            all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])\s]*', cm.body)
-            for link in all_links:
-                if link != '':
-                    submit = {}
-                    submit['thing_id'] = cm.name
-                    submit['submitted'] = False
-                    submit['origin'], submit['content'] = locate_origin(url)
-                    submit['type'] = 'comment'
-                    submitArray.append(submit)
+        if(False): #disabled search in comments
+            if re.search('http.*?:\/\/.*?guildwars2.com\/', cm.body) != None:
+                all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])\s]*', cm.body)
+                for link in all_links:
+                    if link != '':
+                        submit = {}
+                        submit['thing_id'] = cm.name
+                        submit['submitted'] = False
+                        submit['origin'], submit['content'] = locate_origin(link)
+                        submit['type'] = 'comment'
+                        submitArray.append(submit)
     return submitArray
 
 
@@ -146,6 +146,7 @@ def process_submission(submissions, array_anet_names):
     submitArray = []
     for sm in submissions:
         if sm.author.name in array_anet_names:
+            # submission to devtracker subreddit
             submit = {}
             submit['type'] = 'link'
             title = sm.title
@@ -158,7 +159,7 @@ def process_submission(submissions, array_anet_names):
             submit['subreddit'] = 'gw2devtrack'
             submit['content'] = sm.permalink + '?context=1000'
             submitArray.append(submit)
-
+            # submission to alternative devtracker subreddit
             submit = {}
             submit['type'] = 'self'
             title = sm.title
@@ -172,16 +173,18 @@ def process_submission(submissions, array_anet_names):
             submit['content'] = '{0}\n\n{1}?context=1000'.format(sm.selftext, sm.permalink)
             submitArray.append(submit)
 
-        if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.selftext) != None:
-            all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])\s]*', sm.selftext)
-            for link in all_links:
-                if link != '':
-                    submit = {}
-                    submit['thing_id'] = sm.name
-                    submit['submitted'] = False
-                    submit['origin'], submit['content'] = locate_origin(link)
-                    submit['type'] = 'comment'
-                    submitArray.append(submit)
+        if(False): #disabled search in selftext
+            if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.selftext) != None:
+                all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])\s]*', sm.selftext)
+                for link in all_links:
+                    if link != '':
+                        submit = {}
+                        submit['thing_id'] = sm.name
+                        submit['submitted'] = False
+                        submit['origin'], submit['content'] = locate_origin(link)
+                        submit['type'] = 'comment'
+                        submitArray.append(submit)
+        # enabled search in url
         if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.url) != None:
             all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])]*', sm.url)
             for link in all_links:
