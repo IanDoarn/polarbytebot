@@ -37,10 +37,11 @@ class anet_member(Base):
 
 class bot_comments_anetpool(Base):
     __tablename__ = 'bot_comments_anetpool'
-    thread_id = Column(String(15), primary_key=True)
+    thread_id = Column(String(15))
     content = Column(String(10000), nullable=False)
     submitted = Column(Boolean, nullable=False)
     submitted_id = Column(String(15))
+    edit_id = Column(Integer,primary_key=True, unique=True, nullable=False)
 
 
 cfg_file = configparser.ConfigParser()

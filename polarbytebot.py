@@ -231,7 +231,7 @@ class Polarbyte:
                 new_id = self.searchSubmitted(bot_comments, tbcm.thing_id[1:])
                 if new_id == 'del-1':
                     self.updateSubmitted(bot_comments, tbcm.id, 'del-1')
-                if new_id != None:
+                if new_id is not None:
                     self.updateThingId(bot_comments, tbcm.id, new_id)
             session.commit()
 
@@ -266,21 +266,33 @@ class Polarbyte:
                 try:
                     reply_obj = obj.add_comment(tbe.content)
                 except (praw.errors.InvalidSubmission):
-                    self.updateEdited(bot_comments_anetpool, tbe.thread_id, 'del-1')
-                    logging.warning('submitEdit: failed (parentDeleted): {0}'.format(tbe.thread_id))
+                    self.updateEdited(bot_comments_anetpool, tbe.edit_id, 'del-1')
+                    logging.warning('submitEdit: failed (parentDeleted): {0}'.format(tbe.edit_id))
                 else:
-                    self.updateEdited(bot_comments_anetpool, tbe.thread_id, reply_obj.name)
-                    logging.info('submitEdit: submit: {0}'.format(tbe.thread_id))
+                    self.updateEdited(bot_comments_anetpool, tbe.edit_id, reply_obj.name)
+                    logging.info('submitEdit: submit to none submitted id: {0}'.format(tbe.edit_id))
+            elif tbe.submitted_id[:1] == 'e':
+                new_id = self.searchEdited(bot_comments_anetpool, tbe.submitted_id[1:])
+                if new_id is not None and new_id[:1] != 'e':
+                    obj = r.get_info(thing_id=new_id)
+                    try:
+                        reply_obj = obj.reply(tbe.content)
+                    except (praw.errors.InvalidComment):
+                        self.updateEdited(bot_comments_anetpool, tbe.edit_id, 'del-1')
+                        logging.warning('submitEdit: failed (parentDeleted): {0}'.format(tbe.edit_id))
+                    else:
+                        self.updateEdited(bot_comments_anetpool, tbe.edit_id, reply_obj.name)
+                        logging.info('submitEdit: submit based on e: {0}'.format(tbe.edit_id))
             else:
                 obj = r.get_info(thing_id=tbe.submitted_id)
                 try:
                     reply_obj = obj.edit(tbe.content)
                 except (praw.errors.InvalidComment):
-                    self.updateEdited(bot_comments_anetpool, tbe.thread_id, 'del-1')
-                    logging.warning('submitEdit: failed (commentDeleted): {0}'.format(tbe.thread_id))
+                    self.updateEdited(bot_comments_anetpool, tbe.edit_id, 'del-1')
+                    logging.warning('submitEdit: failed (commentDeleted): {0}'.format(tbe.edit_id))
                 else:
-                    self.updateEdited(bot_comments_anetpool, tbe.thread_id)
-                    logging.info('submitEdit: submit: {0}'.format(tbe.thread_id))
+                    self.updateEdited(bot_comments_anetpool, tbe.edit_id)
+                    logging.info('submitEdit: submit to existing: {0}'.format(tbe.edit_id))
             session.commit()
 
     def addComment(self, _thing_id, _content, _submitted=False):
@@ -319,17 +331,27 @@ class Polarbyte:
         session.commit()
 
     def addEdit(self, _thread_id, _content, _submitted=False):
-        existingList = session.query(bot_comments_anetpool).filter_by(thread_id=_thread_id).first()
+        existingList = session.query(bot_comments_anetpool).filter_by(thread_id=_thread_id).order_by(desc(bot_comments_anetpool.edit_id)).first()
+
         if existingList is None:
             row = bot_comments_anetpool()
             row.thread_id = _thread_id
             _from_template = self.anetpool_template.split('&#009;', 1)
-            row.content = _from_template[0] +  _content + '&#009;' + _from_template[1]
+            row.content = _from_template[0] + _content + '&#009;' + _from_template[1]
             row.submitted = _submitted
             session.add(row)
         else:
-            _from_save = existingList.content.split('&#009;', 1)
-            session.query(bot_comments_anetpool).filter_by(thread_id=_thread_id).update({'content': _from_save[0] +  _content + '&#009;' + _from_save[1],'submitted':False})
+            if (len(existingList.content) + len(_content) >= 10000):
+                row = bot_comments_anetpool()
+                row.thread_id = _thread_id
+                _from_template = self.anetpool_template.split('&#009;', 1)
+                row.content = _from_template[0] + _content + '&#009;' + _from_template[1]
+                row.submitted_id = 'e' + str(existingList.edit_id)
+                row.submitted = _submitted
+                session.add(row)
+            else:
+                _from_save = existingList.content.split('&#009;', 1)
+                session.query(bot_comments_anetpool).filter_by(edit_id=existingList.edit_id).update({'content': _from_save[0] +  _content + '&#009;' + _from_save[1],'submitted':False})
         session.commit()
 
     def updateLatestObjectIds(self, _last_comment_id, _last_submission_id):
@@ -346,7 +368,7 @@ class Polarbyte:
                          'last_comment':_last_comment_id})
 
     def updateSubmitted(self, _table, _search_id, _submit_id=None):
-        if(_submit_id != None):
+        if(_submit_id is not None):
             session.query(_table).filter_by(id=_search_id)\
                 .update({'submitted':True,'submitted_id':_submit_id})
         else:
@@ -354,11 +376,11 @@ class Polarbyte:
                 .update({'submitted':True})
 
     def updateEdited(self, _table, _search_id, _submit_id=None):
-        if(_submit_id != None):
-            session.query(_table).filter_by(thread_id=_search_id)\
+        if(_submit_id is not None):
+            session.query(_table).filter_by(edit_id=_search_id)\
                 .update({'submitted':True,'submitted_id':_submit_id})
         else:
-            session.query(_table).filter_by(thread_id=_search_id)\
+            session.query(_table).filter_by(edit_id=_search_id)\
                 .update({'submitted':True})
 
     def searchSubmitted(self, _table, _search_id):
@@ -366,6 +388,9 @@ class Polarbyte:
 
     def updateThingId(self, _table, _search_id, _new_id):
         session.query(_table).filter_by(id=_search_id).update({'thing_id':_new_id})
+
+    def searchEdited(self, _table, _search_id):
+        return session.query(_table).filter_by(edit_id=_search_id).first().submitted_id
 
 
 def main():

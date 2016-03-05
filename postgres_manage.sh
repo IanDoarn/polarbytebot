@@ -21,7 +21,8 @@ sudo -iu postgres_reddit psql -d reddit_polarbytebot_db -c "CREATE TABLE subredd
 sudo -iu postgres_reddit psql -d reddit_polarbytebot_db -c "CREATE TABLE anet_member (
     username VARCHAR(50) PRIMARY KEY);"
 sudo -iu postgres_reddit psql -d reddit_polarbytebot_db -c "CREATE TABLE bot_comments_anetpool (
-    thread_id VARCHAR(15) PRIMARY KEY,
+    thread_id VARCHAR(15),
     content VARCHAR(10000) NOT NULL,
     submitted BOOLEAN NOT NULL,
-    submitted_id VARCHAR(15));"
+    submitted_id VARCHAR(15)
+    edit_id SERIAL PRIMARY KEY UNIQUE NOT NULL);"
