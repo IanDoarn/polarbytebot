@@ -2,6 +2,51 @@ import re
 import requests
 
 
+def process_comment(comments):
+    submitArray = []
+    for cm in comments:
+        if(False): #disabled search in comments
+            if re.search('http.*?://.*?blackdesertonline.com/', cm.body) is not None:
+                all_links = re.findall('http.*?://.*?blackdesertonline.com/[^ \])\s]*', cm.body)
+                for link in all_links:
+                    if link != '':
+                        submit = {}
+                        submit['thing_id'] = cm.name
+                        submit['submitted'] = False
+                        submit['origin'], submit['content'] = locate_origin(link)
+                        submit['type'] = 'comment'
+                        submitArray.append(submit)
+    return submitArray
+
+
+def process_submission(submissions):
+    submitArray = []
+    for sm in submissions:
+        if(False):  # disabled search in selftext
+            if re.search('http.*?://.*?blackdesertonline.com/', sm.selftext) != None:
+                all_links = re.findall('http.*?://.*?blackdesertonline.com/[^ \])\s]*', sm.selftext)
+                for link in all_links:
+                    if link != '':
+                        submit = {}
+                        submit['thing_id'] = sm.name
+                        submit['submitted'] = False
+                        submit['origin'], submit['content'] = locate_origin(link)
+                        submit['type'] = 'comment'
+                        submitArray.append(submit)
+        if(True):   # enabled search in url
+            if re.search('http.*?://.*?blackdesertonline.com/', sm.url) != None:
+                all_links = re.findall('http.*?://.*?blackdesertonline.com/[^ \])]*', sm.url)
+                for link in all_links:
+                    if link != '':
+                        submit = {}
+                        submit['thing_id'] = sm.name
+                        submit['submitted'] = False
+                        submit['origin'], submit['content'] = locate_origin(link)
+                        submit['type'] = 'comment'
+                        submitArray.append(submit)
+    return submitArray
+
+
 def locate_origin(url):
     try:
         forum_re = re.search('https?://forum\.blackdesertonline.com/index.php\?', url)

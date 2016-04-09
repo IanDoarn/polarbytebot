@@ -4,6 +4,7 @@ import re
 import logging, logging.config, logging.handlers
 import json
 import guildwars2
+import blackdesertonline
 #import webbrowser
 
 from datetime import datetime
@@ -72,6 +73,9 @@ class CommentQueue:
             if key == 'Guildwars2' or key.lower() == 'test' or key.lower() == "gw2economy":
                 for post in guildwars2.process_comment(self.queue[key],arenanet_member):
                     self.produced_posts.append(post)
+            elif key.lower() == 'blackdesertonline' or key.lower() == 'test':
+                for post in blackdesertonline.process_comment(self.queue[key]):
+                    self.produced_posts.append(post)
         return self
 
     def prepareDistribute(self):
@@ -81,6 +85,7 @@ class CommentQueue:
         for member in anet_query:
             anet_members.append(member.username)
         return (anet_members)
+
 
 class SubmissionQueue:
     """
@@ -138,6 +143,9 @@ class SubmissionQueue:
         for key in self.queue:
             if key == 'Guildwars2' or key.lower() == 'test' or key.lower() == "gw2economy":
                 for post in guildwars2.process_submission(self.queue[key],arenanet_member):
+                    self.produced_posts.append(post)
+            elif key.lower() == 'blackdesertonline' or key.lower() == 'test':
+                for post in blackdesertonline.process_submission(self.queue[key]):
                     self.produced_posts.append(post)
         return self
 
