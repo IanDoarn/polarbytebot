@@ -200,7 +200,7 @@ def process_submission(submissions, array_anet_names):
 
 
 def locate_origin(url):
-    try:
+    #try:
         forum_re = re.search('http.*?:\/\/forum-..\.guildwars2.com\/forum\/', url)
         blog_re = re.search('http.*?:\/\/.{0,4}guildwars2.com\/.*?\/', url)
         if forum_re is not None:
@@ -209,12 +209,12 @@ def locate_origin(url):
             return ('blog', blog_parse(url))
         else:
             return ('unknown', '')
-    except Exception as e:
-        errormsg = 'error::guildwars2::locate_origin:{0} :on: {1}'.format(e, url)
-        print(errormsg)
-        with open('gw2urlerror', 'a') as f:
-            f.write(errormsg)
-        return ('error: {0}'.format(url), '')
+    #except Exception as e:
+    #    errormsg = 'error::guildwars2::locate_origin:{0} :on: {1}'.format(e, url)
+    #    print(e.args)
+    #    with open('gw2urlerror', 'a') as f:
+    #        f.write(errormsg)
+    #    return ('error: {0}'.format(url), '')
 
 
 def forum_parse(url):
@@ -393,6 +393,7 @@ def html_to_markdown(content, host):
     parser = guildwars2_html2markdown.Htmlparser()
     parser.convert_charrefs = True
     parser.base_url = 'https://' + host
+    content = content.replace('\n', '\n>')
     parser.feed(content)
     # content = tag_bold(content)
     # content = tag_italic(content)
@@ -609,4 +610,4 @@ def tag_other(content):
             .replace('<div class="copy">', " "))
 
 if __name__ == '__main__':
-    locate_origin('https://forum-en.guildwars2.com/forum/info/updates/Game-Update-Notes-March-22-2016/6061460')
+    locate_origin('https://www.guildwars2.com/en/news/celebrate-the-spring-quarterly-update-with-a-dev-chat/')

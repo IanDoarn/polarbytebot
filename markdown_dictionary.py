@@ -15,7 +15,9 @@ h4 = '#### '
 h5 = '##### '
 h6 = '###### '
 
+li = '* '
+
 tab = '\t'
 
-newline1 = '\n'
-newline2 = '\n\n'
+newline1 = '\n>'
+newline2 = '\n\n>'
