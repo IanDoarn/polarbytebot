@@ -3,6 +3,7 @@ import re
 import requests
 import urllib.parse
 import datetime
+import guildwars2_html2markdown
 
 
 class p_href(html.parser.HTMLParser):
@@ -387,32 +388,39 @@ def parse_host_from_url(url):
 
 
 def html_to_markdown(content, host):
-    content = tag_bold(content)
-    content = tag_italic(content)
-    content = tag_list(content)
-    content = tag_superscript(content)
-    content = tag_strikethrough(content)
-    content = tag_underline(content)
-    content = tag_breakrow(content)
-    content = tag_h1(content)
-    content = tag_h2(content)
-    content = tag_h3(content)
-    content = tag_h4(content)
-    content = tag_h5(content)
-    content = tag_h6(content)
-    content = tag_hr(content)
-    content = tag_screenshot(content, host)
-    content = tag_paragraph(content)
-    content = tag_iframe(content, host)
-    content = tag_href(content, host)
-    content = tag_img(content, host)
-    content = tag_quote(content, host)
-    content = tag_spoiler(content, host)
-    content = tag_object(content)
-    content = content.strip('\n')
-    content = '>' + content.replace('\n', '\n>')
-    content = tag_other(content)
-    return content
+    with open('debug/out', 'w') as f:
+        f.write(content)
+    parser = guildwars2_html2markdown.Htmlparser()
+    parser.convert_charrefs = True
+    parser.base_url = 'https://' + host
+    parser.feed(content)
+    # content = tag_bold(content)
+    # content = tag_italic(content)
+    # content = tag_list(content)
+    # content = tag_superscript(content)
+    # content = tag_strikethrough(content)
+    # content = tag_underline(content)
+    # content = tag_breakrow(content)
+    # content = tag_h1(content)
+    # content = tag_h2(content)
+    # content = tag_h3(content)
+    # content = tag_h4(content)
+    # content = tag_h5(content)
+    # content = tag_h6(content)
+    # content = tag_hr(content)
+    # content = tag_screenshot(content, host)
+    # content = tag_paragraph(content)
+    # content = tag_iframe(content, host)
+    # content = tag_href(content, host)
+    # content = tag_img(content, host)
+    # content = tag_quote(content, host)
+    # content = tag_spoiler(content, host)
+    # content = tag_object(content)
+    # content = content.strip('\n')
+    # content = '>' + content.replace('\n', '\n>')
+    # content = tag_other(content)
+    print(parser.result)
+    return parser.result
 
 
 def tag_img(content, host):
@@ -599,3 +607,6 @@ def tag_other(content):
             .replace('<div class="featured">', " ")
             .replace('<div id="commerce-items">', " ")
             .replace('<div class="copy">', " "))
+
+if __name__ == '__main__':
+    locate_origin('https://forum-en.guildwars2.com/forum/info/updates/Game-Update-Notes-March-22-2016/6061460')
