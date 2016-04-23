@@ -51,6 +51,20 @@ class Htmlparser(html.parser.HTMLParser):
             self.append(self.currentText + m.bold)
         if tag == 'em':
             self.append(self.currentText + m.itallic)
+        if tag == 'del':
+            self.append(self.currentText + m.strike)
+        if tag == 'h1':
+            self.append(self.currentText + m.h1)
+        if tag == 'h2':
+            self.append(self.currentText + m.h2)
+        if tag == 'h3':
+            self.append(self.currentText + m.h3)
+        if tag == 'h4':
+            self.append(self.currentText + m.h4)
+        if tag == 'h5' or tag == 'ins':
+            self.append(self.currentText + m.h5)
+        if tag == 'h6':
+            self.append(self.currentText + m.h6)
         if attrs is not None:
             self.pathList.append({'tag': tag, 'attrs': dict(attrs)})
         else:
@@ -84,6 +98,10 @@ class Htmlparser(html.parser.HTMLParser):
         if tag == 'a':
             self.append(self.mrkd_href(self.repair_href(self.read_pathlist(1, 'attrs')['href']),
                                        self.currentText + qtitle), qmcite, qnewline)
+        if tag == 'del':
+            self.append(self.currentText + m.strike)
+        if tag in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ins']:
+            self.append(self.currentText + m.newline)
         self.currentText = ''
 
 
