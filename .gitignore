@@ -3,3 +3,4 @@ polarbytebot.cfg
 venv
 __pycache__
 *.swp
+.idea
