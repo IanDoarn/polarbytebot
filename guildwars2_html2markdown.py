@@ -10,26 +10,36 @@ class Htmlparser(html.parser.HTMLParser):
     result = ''
     # The current data from the current opened tag
     currentText = ''
-    # The base url of the submission, e.g.: forum-en.guildwars2.com
-    base_url = ''
+    # The host including protocol of the submission, e.g.: https://forum-en.guildwars2.com
+    host = ''
 
-    # <blockquote> stuff
+    # Blockquote indention level
     lvlBlockquote = 0
+    # Resulting from blockquote indention level: the text modifier (suitable number of '>'s
     qm = ''
 
+    """
+    Return the pos item (tag-name or attributes) from the end of the pathlist
+    """
     def read_pathlist(self, pos, name):
         return self.pathList[-pos][name]
 
+    """
+    Repairs relative and relative/external urls to absolute https urls
+    """
     def repair_href(self, href):
         if href[:12] == '/external?l=':
             return urllib.parse.unquote_plus(href[12:])
         elif href[:2] == '//':
             return 'https:' + href
         elif href[:1] == '/':
-            return self.base_url + href
+            return self.host + href
         else:
             return href
 
+    """
+    Formats url and (opt.) visual/url description into markdown syntax
+    """
     @staticmethod
     def mrkd_href(href, visual=''):
         if visual == '':
@@ -37,10 +47,16 @@ class Htmlparser(html.parser.HTMLParser):
         else:
             return '{0}{1}{2}{3}{4}{5}'.format(m.lvs, visual.strip(), m.lve, m.lhs, href.strip(), m.lhe)
 
+    """
+    Extracts userfriendly youtube url from embedded url
+    """
     @staticmethod
     def excavate_youtube(url):
         return url
 
+    """
+    Appends string including (opt.) blockquote modifier and (opt.) nextline to final result.
+    """
     def append(self, string, qm=None, is_nextline=False):
         if qm is None:
             qm = self.qm
@@ -49,14 +65,24 @@ class Htmlparser(html.parser.HTMLParser):
             self.result += m.newline2 + qm + str(string)
         else:
             self.result += str(string)
+
+    """
+    Appends string to current data
+    """
     def add(self, string):
         self.currentText += string
 
+    """
+    Returns current data to caller and clears the data afterwards
+    """
     def get_current_text(self):
         t = self.currentText
         self.currentText = ''
         return t
 
+    """
+    Handles starttag of html parser
+    """
     def handle_starttag(self, tag, attrs):
         if tag == 'blockquote':
             self.lvlBlockquote += 1
@@ -89,10 +115,17 @@ class Htmlparser(html.parser.HTMLParser):
         else:
             self.pathList.append({'tag': tag, 'attrs': None})
 
+    """
+    Handles data of html parser
+    """
     def handle_data(self, data):
         self.currentText += data
 
+    """
+    Handles endtag of html parser
+    """
     def handle_endtag(self, tag):
+        # Following variables are needed to distinguish between links out of blockquotes and links in blockquotes
         self.qm = ''
         qtitle = ''
         qnewline = False
@@ -107,7 +140,7 @@ class Htmlparser(html.parser.HTMLParser):
                 qmcite = self.qm
                 qtitle = self.read_pathlist(2, 'attrs')['title']
         if tag == 'img':
-            self.currentText += self.mrkd_href(self.repair_href(self.read_pathlist(1, 'attrs')['src']))
+            self.add(self.mrkd_href(self.repair_href(self.read_pathlist(1, 'attrs')['src'])))
         if tag == 'p':
             self.append(self.get_current_text() + m.newline2)
         if tag == 'strong':
@@ -131,14 +164,9 @@ class Htmlparser(html.parser.HTMLParser):
             self.pathList.pop()
 
 
-def parse(input):
+def parse(source, host):
     parser = Htmlparser()
-    parser.base_url = 'https://forum-en.guildwars2.com'
+    parser.host = host
     parser.convert_charrefs = True
-    with open('tests/bdo_firststeps') as text:
-        parser.feed(text.read())
-    print(parser.result)
-
-
-if __name__ == '__main__':
-    parse('')
+    parser.feed(source)
+    return parser.result

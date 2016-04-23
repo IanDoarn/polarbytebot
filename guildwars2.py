@@ -392,7 +392,7 @@ def html_to_markdown(content, host):
         f.write(content)
     parser = guildwars2_html2markdown.Htmlparser()
     parser.convert_charrefs = True
-    parser.base_url = 'https://' + host
+    parser.host = 'https://' + host
     content = content.replace('\n', '\n>')
     parser.feed(content)
     # content = tag_bold(content)
