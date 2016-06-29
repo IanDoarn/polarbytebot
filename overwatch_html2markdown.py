@@ -34,6 +34,8 @@ class Htmlparser(html.parser.HTMLParser):
             return 'https:' + href
         elif href[:1] == '/':
             return self.host + href
+        elif href[:str(href).find('?')].isdigit():
+            return self.host + '/forums/en/overwatch/topic/' + href
         else:
             return href
 
