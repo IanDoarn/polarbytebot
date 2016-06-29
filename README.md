@@ -2,7 +2,21 @@
 
 ## Introduction
 
-This is a bot for reddit, meant for doing stuff that I want it to do. Currently this does include posting the content of linked threads from guildwars2 forums/blog posts to /r/Guildwars2. It also links posts by ArenaNet employees in /r/Guildwars2 to /r/gw2devtrack. 
+This is a bot for reddit, meant for doing stuff that I want it to do. Currently this does include posting the content of linked threads from forums/blog posts to the thread they got linked in. It also links posts by tagged game developer employees in to track-subreddits. 
+
+Activated Subreddits for forum posts:
+
+ * /r/Overwatch (and soon related subreddits)
+ * /r/Guildwars2
+ 
+Activated Subreddits for blog posts:
+
+ * /r/Guildwars2
+ 
+Developer Tracker:
+ 
+ * /r/Overwatch (and soon related subreddits) -> /r/Blizzwatch
+ * /r/Guildwars2 -> /r/gw2devtrack and /r/gw2devtrackalt
 
 ## Setup
 
@@ -16,7 +30,7 @@ This code has been made public largely for the purpose of showing what the bot d
 
  * crontab_script.sh is a shell script for running the bot inside a virtualenv using crontab
 
- * \*_update.\* files are scripts you should run using cron to update program related information (eg. list of ArenaNet employees reddit-accounts
+ * \*_update.\* files are scripts you should run using cron to update program related information (eg. list of ArenaNet employees reddit-accounts)
 
 ## More Information
 

@@ -73,7 +73,7 @@ class CommentQueue:
             if key == 'Guildwars2' or key.lower() == 'test' or key.lower() == "gw2economy":
                 for post in guildwars2.process_comment(self.queue[key],arenanet_member):
                     self.produced_posts.append(post)
-            if key.lower() == 'overwatch':
+            if key.lower() == 'overwatch' or key.lower() == 'test':
                 for post in overwatch.process_comment(self.queue[key]):
                     self.produced_posts.append(post)
         return self
@@ -144,7 +144,7 @@ class SubmissionQueue:
             if key == 'Guildwars2' or key.lower() == 'test' or key.lower() == "gw2economy":
                 for post in guildwars2.process_submission(self.queue[key],arenanet_member):
                     self.produced_posts.append(post)
-            if key.lower() == 'overwatch':
+            if key.lower() == 'overwatch' or key.lower() == 'test':
                 for post in overwatch.process_submission(self.queue[key]):
                     self.produced_posts.append(post)
         return self
