@@ -4,6 +4,7 @@ import re
 import logging, logging.config, logging.handlers
 import json
 import guildwars2
+import overwatch
 #import webbrowser
 
 from datetime import datetime
@@ -72,6 +73,9 @@ class CommentQueue:
             if key == 'Guildwars2' or key.lower() == 'test' or key.lower() == "gw2economy":
                 for post in guildwars2.process_comment(self.queue[key],arenanet_member):
                     self.produced_posts.append(post)
+            if key.lower() == 'overwatch':
+                for post in overwatch.process_comment(self.queue[key]):
+                    self.produced_posts.append(post)
         return self
 
     def prepareDistribute(self):
@@ -138,6 +142,9 @@ class SubmissionQueue:
         for key in self.queue:
             if key == 'Guildwars2' or key.lower() == 'test' or key.lower() == "gw2economy":
                 for post in guildwars2.process_submission(self.queue[key],arenanet_member):
+                    self.produced_posts.append(post)
+            if key.lower() == 'overwatch':
+                for post in overwatch.process_submission(self.queue[key]):
                     self.produced_posts.append(post)
         return self
 

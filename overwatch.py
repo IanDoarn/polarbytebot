@@ -111,7 +111,7 @@ def forum_parse(url):
     t_name = forum_name(post_dict['message'])
     post_dict['name'] = t_name[0]
     post_dict['isBlizzard'] = t_name[1]
-    post_dict['content'] = content_selection(post_dict['message'], '<div class="TopicPost-bodyContent" data-topic-post-body-content="true"', '<div', '</div>')
+    post_dict['content'] = content_selection(post_dict['message'], '<div class="TopicPost-bodyContent" data-topic-post-body-content="true"', '<div', '</div>')[1:] + '</div>'
     markdown_header = post_dict['isBlizzard'] + ' [' + post_dict['name'] + ' posted on ' + post_dict['datetime'] + '](' + url + '):\n'
     markdown_content = html_to_markdown(post_dict['content'], parse_host_from_url(url))
     return markdown_header + markdown_content
@@ -230,5 +230,5 @@ def html_to_markdown(content, host):
     return parser.result
 
 if __name__ == '__main__':
-    locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745604460?page=3#post-42')
-    #locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745605151#post-1')
+    #locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745604460?page=3#post-42')
+    locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745755074#post-1')
