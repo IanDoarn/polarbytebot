@@ -201,11 +201,11 @@ def forum_name(content):
 
 
 def forum_blizz(posted_by_class):
-    posted_by_blizz = re.search('class="Author[^"]*', posted_by_class).group(0)
-    if "blizzard" in posted_by_blizz:
-        return '[BLIZZARD]'
-    else:
-        return ''
+    posted_by_blizz = re.findall('class="Author[^"]*', posted_by_class)
+    for found in posted_by_blizz:
+        if "blizzard" in found:
+            return '[BLIZZARD]'
+    return ''
 
 
 def forum_datetime(content):
@@ -226,9 +226,8 @@ def html_to_markdown(content, host):
     parser.host = 'https://' + host
     content = content.replace('\n', '\n>')
     parser.feed(content)
-    print(parser.result)
     return parser.result
 
 if __name__ == '__main__':
     #locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745604460?page=3#post-42')
-    locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745755074#post-1')
+    locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745665208#post-3')
