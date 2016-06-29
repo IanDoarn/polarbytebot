@@ -1,5 +1,8 @@
 polarbytebot.log*
 polarbytebot.cfg
-venv
-__pycache__
+venv/
+__pycache__/
 *.swp
+.idea/
+debug/
+tests/

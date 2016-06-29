@@ -3,6 +3,7 @@ import re
 import requests
 import urllib.parse
 import datetime
+import guildwars2_html2markdown
 
 
 class p_href(html.parser.HTMLParser):
@@ -173,7 +174,7 @@ def process_submission(submissions, array_anet_names):
             submit['content'] = '{0}\n\n{1}?context=1000'.format(sm.selftext, sm.permalink)
             submitArray.append(submit)
 
-        if(False): #disabled search in selftext
+        if(False):  # disabled search in selftext
             if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.selftext) != None:
                 all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])\s]*', sm.selftext)
                 for link in all_links:
@@ -184,22 +185,22 @@ def process_submission(submissions, array_anet_names):
                         submit['origin'], submit['content'] = locate_origin(link)
                         submit['type'] = 'comment'
                         submitArray.append(submit)
-        # enabled search in url
-        if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.url) != None:
-            all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])]*', sm.url)
-            for link in all_links:
-                if link != '':
-                    submit = {}
-                    submit['thing_id'] = sm.name
-                    submit['submitted'] = False
-                    submit['origin'], submit['content'] = locate_origin(link)
-                    submit['type'] = 'comment'
-                    submitArray.append(submit)
+        if(True):   # enabled search in url
+            if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.url) != None:
+                all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])]*', sm.url)
+                for link in all_links:
+                    if link != '':
+                        submit = {}
+                        submit['thing_id'] = sm.name
+                        submit['submitted'] = False
+                        submit['origin'], submit['content'] = locate_origin(link)
+                        submit['type'] = 'comment'
+                        submitArray.append(submit)
     return submitArray
 
 
 def locate_origin(url):
-    try:
+    #try:
         forum_re = re.search('http.*?:\/\/forum-..\.guildwars2.com\/forum\/', url)
         blog_re = re.search('http.*?:\/\/.{0,4}guildwars2.com\/.*?\/', url)
         if forum_re is not None:
@@ -208,12 +209,12 @@ def locate_origin(url):
             return ('blog', blog_parse(url))
         else:
             return ('unknown', '')
-    except Exception as e:
-        errormsg = 'error::guildwars2::locate_origin:{0} :on: {1}'.format(e, url)
-        print(errormsg)
-        with open('gw2urlerror', 'a') as f:
-            f.write(errormsg)
-        return ('error: {0}'.format(url), '')
+    #except Exception as e:
+    #    errormsg = 'error::guildwars2::locate_origin:{0} :on: {1}'.format(e, url)
+    #    print(e.args)
+    #    with open('gw2urlerror', 'a') as f:
+    #        f.write(errormsg)
+    #    return ('error: {0}'.format(url), '')
 
 
 def forum_parse(url):
@@ -387,32 +388,40 @@ def parse_host_from_url(url):
 
 
 def html_to_markdown(content, host):
-    content = tag_bold(content)
-    content = tag_italic(content)
-    content = tag_list(content)
-    content = tag_superscript(content)
-    content = tag_strikethrough(content)
-    content = tag_underline(content)
-    content = tag_breakrow(content)
-    content = tag_h1(content)
-    content = tag_h2(content)
-    content = tag_h3(content)
-    content = tag_h4(content)
-    content = tag_h5(content)
-    content = tag_h6(content)
-    content = tag_hr(content)
-    content = tag_screenshot(content, host)
-    content = tag_paragraph(content)
-    content = tag_iframe(content, host)
-    content = tag_href(content, host)
-    content = tag_img(content, host)
-    content = tag_quote(content, host)
-    content = tag_spoiler(content, host)
-    content = tag_object(content)
-    content = content.strip('\n')
-    content = '>' + content.replace('\n', '\n>')
-    content = tag_other(content)
-    return content
+    with open('debug/out', 'w') as f:
+        f.write(content)
+    parser = guildwars2_html2markdown.Htmlparser()
+    parser.convert_charrefs = True
+    parser.host = 'https://' + host
+    content = content.replace('\n', '\n>')
+    parser.feed(content)
+    # content = tag_bold(content)
+    # content = tag_italic(content)
+    # content = tag_list(content)
+    # content = tag_superscript(content)
+    # content = tag_strikethrough(content)
+    # content = tag_underline(content)
+    # content = tag_breakrow(content)
+    # content = tag_h1(content)
+    # content = tag_h2(content)
+    # content = tag_h3(content)
+    # content = tag_h4(content)
+    # content = tag_h5(content)
+    # content = tag_h6(content)
+    # content = tag_hr(content)
+    # content = tag_screenshot(content, host)
+    # content = tag_paragraph(content)
+    # content = tag_iframe(content, host)
+    # content = tag_href(content, host)
+    # content = tag_img(content, host)
+    # content = tag_quote(content, host)
+    # content = tag_spoiler(content, host)
+    # content = tag_object(content)
+    # content = content.strip('\n')
+    # content = '>' + content.replace('\n', '\n>')
+    # content = tag_other(content)
+    print(parser.result)
+    return parser.result
 
 
 def tag_img(content, host):
@@ -599,3 +608,6 @@ def tag_other(content):
             .replace('<div class="featured">', " ")
             .replace('<div id="commerce-items">', " ")
             .replace('<div class="copy">', " "))
+
+if __name__ == '__main__':
+    locate_origin('https://www.guildwars2.com/en/news/celebrate-the-spring-quarterly-update-with-a-dev-chat/')

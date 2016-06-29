@@ -86,6 +86,7 @@ class CommentQueue:
             anet_members.append(member.username)
         return (anet_members)
 
+
 class SubmissionQueue:
     """
     Queue of all to be processed submissions.
