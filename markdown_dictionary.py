@@ -8,6 +8,7 @@ itallic = '*'
 strike = '~~'
 quote = '>'
 
+line = '---'
 code = '     '
 
 h1 = '# '
@@ -22,5 +23,6 @@ li = '* '
 
 tab = '\t'
 
+newline_no_quote = '\n\n'
 newline1 = '\n>'
 newline2 = '\n\n>'

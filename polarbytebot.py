@@ -42,7 +42,7 @@ class CommentQueue:
         while(True):
             comments = r.get_comments(self.enabled_subreddits,limit=None)
             for cm in comments:
-                if cm.author == None:
+                if cm.author is None:
                     self.last_comment_id = t_last_comment_id
                     logging.warning('CommentQueue: forced return on {0}'\
                                          .format(self.last_comment_id))

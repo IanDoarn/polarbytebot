@@ -181,7 +181,7 @@ class Htmlparser(html.parser.HTMLParser):
         if tag == 'iframe':
             self.append(self.mrkd_href(self.excavate_youtube(self.repair_href(self.read_pathlist(1,'attrs')['src']))))
         if tag == 'div':
-            self.append(self.get_current_text(), is_nextline=True)
+            self.append(self.get_current_text())
         if tag == 'code':
             self.append(self.get_current_text(), is_nextline=True)
             self.is_code = False

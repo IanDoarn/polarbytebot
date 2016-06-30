@@ -4,6 +4,7 @@ import requests
 import urllib.parse
 import datetime
 import overwatch_html2markdown
+import markdown_dictionary as m
 
 def process_comment(comments):
     submitArray = []
@@ -87,11 +88,11 @@ def process_submission(submissions):
     return submitArray
 
 
-def locate_origin(url):
+def locate_origin(url, parse_refs=True):
     #try:
-        forum_re = re.search('https?://(?P<region>.{2,3}?)\.battle.net(?P<forum>\/forums)', url)
+        forum_re = re.search('https?://(?P<region>.{2,3}?)\.battle\.net(?P<forum>\/forums)', url)
         if forum_re is not None:
-            return ('forum', forum_parse(url))
+            return ('forum', forum_parse(url,parse_refs))
         else:
             return ('unknown', '')
     #except Exception as e:
@@ -102,7 +103,7 @@ def locate_origin(url):
     #    return ('error: {0}'.format(url), '')
 
 
-def forum_parse(url):
+def forum_parse(url, parse_refs=True):
     post_dict = {}
     post_dict['id'] = forum_id(url)
     post_dict['req'] = requests_get(url)
@@ -114,7 +115,19 @@ def forum_parse(url):
     post_dict['content'] = content_selection(post_dict['message'], '<div class="TopicPost-bodyContent" data-topic-post-body-content="true"', '<div', '</div>')[1:] + '</div>'
     markdown_header = post_dict['isBlizzard'] + ' [' + post_dict['name'] + ' posted on ' + post_dict['datetime'] + '](' + url + '):\n'
     markdown_content = html_to_markdown(post_dict['content'], parse_host_from_url(url))
-    return markdown_header + markdown_content
+    markdown_post = markdown_header + markdown_content
+
+
+    # Search referenced posts
+    if re.search('http.*?:\/\/.*?battle.net\/forums', post_dict['content']) is not None and parse_refs == True:
+        all_links = re.findall('http.*?:\/\/.*?battle.net\/[^ \])]*', post_dict['content'])
+        markdown_post += m.newline_no_quote + m.line + m.newline_no_quote + 'Referenced Postings:' + m.newline_no_quote
+        for link in all_links:
+            ref_origin, ref_content = locate_origin(link, parse_refs=False)
+            if ref_origin == 'forum':
+                markdown_post += ref_content + m.newline_no_quote
+
+    return markdown_post
 
 
 def forum_id(url):
@@ -229,5 +242,5 @@ def html_to_markdown(content, host):
     return parser.result
 
 if __name__ == '__main__':
-    #locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745604460?page=3#post-42')
-    locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745665208#post-3')
+    #locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745755424?page=3#post-58')
+    print(locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745755041')[1])
