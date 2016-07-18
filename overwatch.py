@@ -6,10 +6,11 @@ import datetime
 import overwatch_html2markdown
 import markdown_dictionary as m
 import overwatch_config as config
+import random
 
 
 def get_signature():
-    return config.SIGNATURE.format(message='Fuck the red team.')
+    return config.SIGNATURE.format(message=random.choice(config.FUNNY_MESSAGES))
 
 
 def process_comment(comments):
