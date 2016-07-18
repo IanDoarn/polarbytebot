@@ -6,33 +6,50 @@ import datetime
 import overwatch_html2markdown
 import markdown_dictionary as m
 
+
+def get_signature():
+    return '\n' \
+           '\n' \
+           '---\n' \
+           '^(Beep boop. {message})\n' \
+           '\n' \
+           '^(I am robot. My task in this subreddit is to transcribe the content of submitted forumposts from ' \
+           'battle.net. I also link responses of Blizzard employees to /r/Blizzwatch. Please message /u/Xyooz if you ' \
+           'have any questions, suggestions or concerns.) ' \
+           '[^Source ^Code](https://github.com/networkjanitor/polarbytebot)'.format(message='Fuck the red team.')
+
+
 def process_comment(comments):
     submitArray = []
     for cm in comments:
-        if cm.author_flair_css_class == 'blizz':
+        if cm.author_flair_css_class is not None and 'blizz' in cm.author_flair_css_class:
             # submission to devtracker subreddit
             submit = {}
             submit['type'] = 'link'
             title = cm.link_title
             if len(title) + len(cm.author.name) + len(' []') > 300:
-                title = '{0}... [{1}]'.format(title[:300 - len(cm.author.name) - len(' []') - len('...')], cm.author.name)
+                title = '{0}... [{1}]'.format(title[:300 - len(cm.author.name) - len(' []') - len('...')],
+                                              cm.author.name)
             else:
                 title = '{0} [{1}]'.format(title, cm.author.name)
             submit['title'] = title
             submit['subreddit'] = 'blizzwatch'
             submit['submitted'] = False
             submit['content'] = cm.permalink + '?context=1000'
+            submit['signature'] = get_signature()
             submitArray.append(submit)
             # anet-comment-pool
-            #submit = {}
-            #submit['thread_id'] = cm.link_id
-            #submit['type'] = 'edit'
-            #submit['submitted'] = False
-            #submit['content'] = '\n\n* [Comment by {0}]({1}?context=1000) - {2}'.format(cm.author.name, cm.permalink, datetime.datetime.fromtimestamp(cm.created_utc,datetime.timezone.utc).isoformat(' '))
-            #submitArray.append(submit)
+            # submit = {}
+            # submit['thread_id'] = cm.link_id
+            # submit['type'] = 'edit'
+            # submit['submitted'] = False
+            # submit['content'] = '\n\n* [Comment by {0}]({1}?context=1000) - {2}'.format(cm.author.name, cm.permalink, datetime.datetime.fromtimestamp(cm.created_utc,datetime.timezone.utc).isoformat(' '))
+            # submit['signature'] = get_signature()
+            # submitArray.append(submit)
 
-        if False: #disabled search in comments
-            if re.search('http.*?:\/\/.*?guildwars2.com\/', cm.body) != None: # FYI: search for playoverwatch.com and ???.battle.net/forum
+        if False:  # disabled search in comments
+            if re.search('http.*?:\/\/.*?guildwars2.com\/',
+                         cm.body) != None:  # FYI: search for playoverwatch.com and ???.battle.net/forum
                 all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])\s]*', cm.body)
                 for link in all_links:
                     if link != '':
@@ -41,6 +58,7 @@ def process_comment(comments):
                         submit['submitted'] = False
                         submit['origin'], submit['content'] = locate_origin(link)
                         submit['type'] = 'comment'
+                        submit['signature'] = get_signature()
                         submitArray.append(submit)
     return submitArray
 
@@ -48,22 +66,24 @@ def process_comment(comments):
 def process_submission(submissions):
     submitArray = []
     for sm in submissions:
-        if sm.author_flair_css_class == 'blizz':
+        if sm.author_flair_css_class is not None and 'blizz' in sm.author_flair_css_class:
             # submission to devtracker subreddit
             submit = {}
             submit['type'] = 'link'
             title = sm.title
             if len(title) + len(sm.author.name) + len(' []') > 300:
-                title = '{0}... [{1}]'.format(title[:300 - len(sm.author.name) - len(' []') - len('...')], sm.author.name)
+                title = '{0}... [{1}]'.format(title[:300 - len(sm.author.name) - len(' []') - len('...')],
+                                              sm.author.name)
             else:
                 title = '{0} [{1}]'.format(title, sm.author.name)
             submit['title'] = title
             submit['submitted'] = False
             submit['subreddit'] = 'blizzwatch'
             submit['content'] = sm.permalink + '?context=1000'
+            submit['signature'] = get_signature()
             submitArray.append(submit)
 
-        if(False):  # disabled search in selftext
+        if (False):  # disabled search in selftext
             if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.selftext) != None:
                 all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])\s]*', sm.selftext)
                 for link in all_links:
@@ -73,8 +93,9 @@ def process_submission(submissions):
                         submit['submitted'] = False
                         submit['origin'], submit['content'] = locate_origin(link)
                         submit['type'] = 'comment'
+                        submit['signature'] = get_signature()
                         submitArray.append(submit)
-        if(True):   # enabled search in url
+        if (True):  # enabled search in url
             if re.search('http.*?:\/\/.*?battle.net\/', sm.url) != None:
                 all_links = re.findall('http.*?:\/\/.*?battle.net\/[^ \])]*', sm.url)
                 for link in all_links:
@@ -84,23 +105,24 @@ def process_submission(submissions):
                         submit['submitted'] = False
                         submit['origin'], submit['content'] = locate_origin(link)
                         submit['type'] = 'comment'
+                        submit['signature'] = get_signature()
                         submitArray.append(submit)
     return submitArray
 
 
 def locate_origin(url, parse_refs=True):
-    #try:
+    try:
         forum_re = re.search('https?://(?P<region>.{2,3}?)\.battle\.net(?P<forum>\/forums)', url)
         if forum_re is not None:
-            return ('forum', forum_parse(url,parse_refs))
+            return ('forum', forum_parse(url, parse_refs))
         else:
             return ('unknown', '')
-    #except Exception as e:
-    #    errormsg = 'error::guildwars2::locate_origin:{0} :on: {1}'.format(e, url)
-    #    print(e.args)
-    #    with open('gw2urlerror', 'a') as f:
-    #        f.write(errormsg)
-    #    return ('error: {0}'.format(url), '')
+    except Exception as e:
+        errormsg = 'error::overwatch::locate_origin:{0} :on: {1}'.format(e, url)
+        print(e.args)
+        with open('owurlerror', 'a') as f:
+            f.write(errormsg)
+        return ('error: {0}'.format(url), '')
 
 
 def forum_parse(url, parse_refs=True):
@@ -112,16 +134,19 @@ def forum_parse(url, parse_refs=True):
     t_name = forum_name(post_dict['message'])
     post_dict['name'] = t_name[0]
     post_dict['isBlizzard'] = t_name[1]
-    post_dict['content'] = content_selection(post_dict['message'], '<div class="TopicPost-bodyContent" data-topic-post-body-content="true"', '<div', '</div>')[1:] + '</div>'
-    markdown_header = post_dict['isBlizzard'] + ' [' + post_dict['name'] + ' posted on ' + post_dict['datetime'] + '](' + url + '):\n'
+    post_dict['content'] = content_selection(post_dict['message'],
+                                             '<div class="TopicPost-bodyContent" data-topic-post-body-content="true"',
+                                             '<div', '</div>')[1:] + '</div>'
+    markdown_header = post_dict['isBlizzard'] + ' [' + post_dict['name'] + ' posted on ' + post_dict[
+        'datetime'] + '](' + url + '):\n'
     markdown_content = html_to_markdown(post_dict['content'], parse_host_from_url(url))
     markdown_post = markdown_header + markdown_content
 
-
     # Search referenced posts
     if re.search('http.*?:\/\/.*?battle.net\/forums', post_dict['content']) is not None and parse_refs == True:
-        all_links = re.findall('http.*?:\/\/.*?battle.net\/[^ \])]*', post_dict['content'])
+        all_links = re.findall('http.*?:\/\/.*?battle.net\/[^ \])"\']*', post_dict['content'])
         markdown_post += m.newline_no_quote + m.line + m.newline_no_quote + 'Referenced Postings:' + m.newline_no_quote
+        all_links = set(all_links)
         for link in all_links:
             ref_origin, ref_content = locate_origin(link, parse_refs=False)
             if ref_origin == 'forum':
@@ -131,7 +156,9 @@ def forum_parse(url, parse_refs=True):
 
 
 def forum_id(url):
-    urlInformation = re.search('https?://(?P<region>.{2,3}?)\.battle.net(?P<forum>\/forums)(?P<language>\/[^\/]*)(?P<subforum>\/[^\/]*)(?P<title>\/[^\/#]*)((?P<identifier1>\/[^\/#\s?]*)|)((?P<identifier2>(#?|\/)[^\/#\s]*)|)((?P<identifier3>(#|\/)[^\/#\s]*)|)', url)
+    urlInformation = re.search(
+        'https?://(?P<region>.{2,3}?)\.battle.net(?P<forum>\/forums)(?P<language>\/[^\/]*)(?P<subforum>\/[^\/]*)(?P<title>\/[^\/#]*)((?P<identifier1>\/[^\/#\s?]*)|)((?P<identifier2>(#?|\/)[^\/#\s]*)|)((?P<identifier3>(#|\/)[^\/#\s]*)|)',
+        url)
     identifier1 = urlInformation.group('identifier1')
     identifier2 = urlInformation.group('identifier2')
     identifier3 = urlInformation.group('identifier3')
@@ -144,7 +171,7 @@ def forum_id(url):
         return identifier2[1:]
     # http://us.battle.net/forums/en/overwatch/topic/20745604460?page=3
     elif identifier1[1:].isdigit and identifier2[:6] == '?page=' and identifier3 is None:
-        return 'post-' + str((int(identifier2[6:])-1)*20+1)
+        return 'post-' + str((int(identifier2[6:]) - 1) * 20 + 1)
     # http://us.battle.net/forums/en/overwatch/topic/20745604460?page=3#post-41
     elif identifier1[1:].isdigit and identifier2[:6] == '?page=' and identifier3[:6] == '#post-':
         return identifier3[1:]
@@ -166,13 +193,14 @@ def forum_getFirstId(url):
 
 def requests_get(url):
     counter = 0
-    while (True):
+    while True:
         try:
             req = requests.get(url)
         except:
             pass
         else:
             return req
+
         finally:
             counter += 1
             if counter > 100:
@@ -208,8 +236,9 @@ def content_selection(content, start_str, nst, net):
 
 def forum_name(content):
     posted_by_class = re.search('<aside class="TopicPost-author">.*?</aside>', content, re.DOTALL).group(0)
-    posted_by_name = re.search('<span class="Author-name">(?P<name>.*?)</span>', posted_by_class, re.DOTALL).group('name')
-    #posted_by_name = posted_by_name.replace('-', ' ', posted_by_name.count('-') - 1).replace('-', '.')
+    posted_by_name = re.search('<span class="Author-name">(?P<name>.*?)</span>', posted_by_class, re.DOTALL).group(
+        'name')
+    # posted_by_name = posted_by_name.replace('-', ' ', posted_by_name.count('-') - 1).replace('-', '.')
     return [posted_by_name.strip(), forum_blizz(posted_by_class)]
 
 
@@ -222,8 +251,9 @@ def forum_blizz(posted_by_class):
 
 
 def forum_datetime(content):
-    #<a class="TopicPost-timestamp" .*? data-tooltip-content="06/23/2016 05:35 AM">.*?</a>
-    posted_datetime_class = re.search('<a class="TopicPost-timestamp".*?data-tooltip-content=".*?">\s*.*?\s*</a>', content).group(0)
+    # <a class="TopicPost-timestamp" .*? data-tooltip-content="06/23/2016 05:35 AM">.*?</a>
+    posted_datetime_class = re.search('<a class="TopicPost-timestamp".*?data-tooltip-content=".*?">\s*.*?\s*</a>',
+                                      content).group(0)
     return re.search('data-tooltip-content="[^"]*', posted_datetime_class).group(0)[len("data-tooltip-content=\""):]
 
 
@@ -241,6 +271,7 @@ def html_to_markdown(content, host):
     parser.feed(content)
     return parser.result
 
+
 if __name__ == '__main__':
-    #locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745755424?page=3#post-58')
-    print(locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745755041')[1])
+    # locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745755424?page=3#post-58')
+    print(locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745727098')[1])

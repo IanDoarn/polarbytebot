@@ -170,6 +170,7 @@ class Polarbyte:
                                       .split(',')]
         self.forceAuthenticationAgain = True
         self.authenticate()
+
     def check(self):
         if self.forceAuthenticationAgain:
             self.authenticate()
@@ -196,14 +197,17 @@ class Polarbyte:
         self.updateLatestObjectIds(self.cmQueue.last_comment_id, self.smQueue.last_submission_id)
         session.commit()
 
-    def processPosts(self):
+    def process_posts(self):
         for post in self.smQueue.produced_posts+self.cmQueue.produced_posts:
             if post['type'] == 'link' or post['type'] == 'self':
-                self.addSubmission(post['subreddit'], post['title'], post['content'], post['type'], post['submitted'])
+                self.addSubmission(post['subreddit'], post['title'], post['content'], post['type'], _submitted=post['submitted'])
             elif post['type'] == 'comment':
-                self.addComment(post['thing_id'], post['content'], post['submitted'])
+                if 'signature' in post:
+                    self.add_comment(post['thing_id'], post['content'], _submitted=post['submitted'], _signature=post['signature'])
+                else:
+                    self.add_comment(post['thing_id'], post['content'], _submitted=post['submitted'])
             elif post['type'] == 'edit':
-                self.addEdit(post['thread_id'], post['content'], post['submitted'])
+                self.addEdit(post['thread_id'], post['content'], _submitted=post['submitted'])
             else:
                 logging.warning("unknown type: {0}".format(post['type']))
 
@@ -303,9 +307,11 @@ class Polarbyte:
                     logging.info('submitEdit: submit to existing: {0}'.format(tbe.edit_id))
             session.commit()
 
-    def addComment(self, _thing_id, _content, _submitted=False):
+    def add_comment(self, _thing_id, _content, _submitted=False, _signature=None):
+        if _signature is None:
+            _signature = self.signature
         last_id = _thing_id
-        extra_len = len('\n\n--- continued below ---') + len(self.signature)
+        extra_len = len('\n\n--- continued below ---') + len(_signature)
         while(True):
             if len(_content) <= 0:
                 return
@@ -320,9 +326,9 @@ class Polarbyte:
             row.thing_id = last_id
             row.submitted = _submitted
             if _content[len(stiched_content):] == '':
-                row.content = stiched_content + self.signature
+                row.content = stiched_content + _signature
             else:
-                row.content = stiched_content + '\n\n--- continued below ---' + self.signature
+                row.content = stiched_content + '\n\n--- continued below ---' + _signature
             session.add(row)
             session.commit()
             last_id = 'i{}'.format(session.query(bot_comments).order_by(desc(bot_comments.id)).first().id)
@@ -372,7 +378,7 @@ class Polarbyte:
             session.add(row)
         else:
             session.query(subreddit).filter_by(website='reddit')\
-                .update({'last_submission':_last_submission_id,\
+                .update({'last_submission':_last_submission_id,
                          'last_comment':_last_comment_id})
 
     def updateSubmitted(self, _table, _search_id, _submit_id=None):
@@ -410,13 +416,13 @@ def main():
         try:
             bot.check()
             bot.collect()
-            bot.processPosts()
+            bot.process_posts()
             bot.submit()
         except praw.errors.OAuthScopeRequired as e:
             logging.error(e)
             bot.forceAuthenticationAgain = True
         except Exception as e:
-            #print(vars(e))
+            print(vars(e))
             logging.error(e)
             session.rollback()
 
