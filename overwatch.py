@@ -5,24 +5,18 @@ import urllib.parse
 import datetime
 import overwatch_html2markdown
 import markdown_dictionary as m
+import overwatch_config as config
 
 
 def get_signature():
-    return '\n' \
-           '\n' \
-           '---\n' \
-           '^(Beep boop. {message})\n' \
-           '\n' \
-           '^(I am robot. My task in this subreddit is to transcribe the content of submitted forumposts from ' \
-           'battle.net. I also link responses of Blizzard employees to /r/Blizzwatch. Please message /u/Xyooz if you ' \
-           'have any questions, suggestions or concerns.) ' \
-           '[^Source ^Code](https://github.com/networkjanitor/polarbytebot)'.format(message='Fuck the red team.')
+    return config.SIGNATURE.format(message='Fuck the red team.')
 
 
 def process_comment(comments):
     submitArray = []
     for cm in comments:
-        if cm.author_flair_css_class is not None and 'blizz' in cm.author_flair_css_class:
+        if cm.author_flair_css_class is not None and config.SEARCH_FLAIR_CSS_CLASS in cm.author_flair_css_class and \
+                config.Comments.TRACK_EMPLYOEES:
             # submission to devtracker subreddit
             submit = {}
             submit['type'] = 'link'
@@ -38,28 +32,18 @@ def process_comment(comments):
             submit['content'] = cm.permalink + '?context=1000'
             submit['signature'] = get_signature()
             submitArray.append(submit)
-            # anet-comment-pool
-            # submit = {}
-            # submit['thread_id'] = cm.link_id
-            # submit['type'] = 'edit'
-            # submit['submitted'] = False
-            # submit['content'] = '\n\n* [Comment by {0}]({1}?context=1000) - {2}'.format(cm.author.name, cm.permalink, datetime.datetime.fromtimestamp(cm.created_utc,datetime.timezone.utc).isoformat(' '))
-            # submit['signature'] = get_signature()
-            # submitArray.append(submit)
 
-        if False:  # disabled search in comments
-            if re.search('http.*?:\/\/.*?guildwars2.com\/',
-                         cm.body) != None:  # FYI: search for playoverwatch.com and ???.battle.net/forum
-                all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])\s]*', cm.body)
-                for link in all_links:
-                    if link != '':
-                        submit = {}
-                        submit['thing_id'] = cm.name
-                        submit['submitted'] = False
-                        submit['origin'], submit['content'] = locate_origin(link)
-                        submit['type'] = 'comment'
-                        submit['signature'] = get_signature()
-                        submitArray.append(submit)
+        if config.Comments.SEARCH_IN_CONTENT:
+            all_links = re.findall(config.Comments.LINK_REGEX, cm.body)
+            for link in all_links or []:
+                if link != '':
+                    submit = {}
+                    submit['thing_id'] = cm.name
+                    submit['submitted'] = False
+                    submit['origin'], submit['content'] = locate_origin(link)
+                    submit['type'] = 'comment'
+                    submit['signature'] = get_signature()
+                    submitArray.append(submit)
     return submitArray
 
 
@@ -78,41 +62,39 @@ def process_submission(submissions):
                 title = '{0} [{1}]'.format(title, sm.author.name)
             submit['title'] = title
             submit['submitted'] = False
-            submit['subreddit'] = 'blizzwatch'
+            submit['subreddit'] = config.TRACKING_SUBREDDIT
             submit['content'] = sm.permalink + '?context=1000'
             submit['signature'] = get_signature()
             submitArray.append(submit)
 
-        if (False):  # disabled search in selftext
-            if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.selftext) != None:
-                all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])\s]*', sm.selftext)
-                for link in all_links:
-                    if link != '':
-                        submit = {}
-                        submit['thing_id'] = sm.name
-                        submit['submitted'] = False
-                        submit['origin'], submit['content'] = locate_origin(link)
-                        submit['type'] = 'comment'
-                        submit['signature'] = get_signature()
-                        submitArray.append(submit)
-        if (True):  # enabled search in url
-            if re.search('http.*?:\/\/.*?battle.net\/', sm.url) != None:
-                all_links = re.findall('http.*?:\/\/.*?battle.net\/[^ \])]*', sm.url)
-                for link in all_links:
-                    if link != '':
-                        submit = {}
-                        submit['thing_id'] = sm.name
-                        submit['submitted'] = False
-                        submit['origin'], submit['content'] = locate_origin(link)
-                        submit['type'] = 'comment'
-                        submit['signature'] = get_signature()
-                        submitArray.append(submit)
+        if config.Submissions.SEARCH_IN_TEXT:
+            all_links = re.findall(config.Submissions.LINK_REGEX, sm.selftext)
+            for link in all_links or []:
+                if link != '':
+                    submit = {'thing_id': sm.name,
+                              'submitted': False,
+                              'origin': locate_origin(link)[0],
+                              'content': locate_origin(link)[1],
+                              'type': 'comment',
+                              'signature': get_signature()}
+                    submitArray.append(submit)
+        if config.Submissions.SEARCH_IN_URL:
+            all_links = re.findall(config.Submissions.LINK_REGEX, sm.url)
+            for link in all_links or []:
+                if link != '':
+                    submit = {'thing_id': sm.name,
+                              'submitted': False,
+                              'origin': locate_origin(link)[0],
+                              'content': locate_origin(link)[1],
+                              'type': 'comment',
+                              'signature': get_signature()}
+                    submitArray.append(submit)
     return submitArray
 
 
 def locate_origin(url, parse_refs=True):
     try:
-        forum_re = re.search('https?://(?P<region>.{2,3}?)\.battle\.net(?P<forum>\/forums)', url)
+        forum_re = re.search('https?://(?P<region>.{2,3}?)\.battle\.net(?P<forum>/forums)', url)
         if forum_re is not None:
             return ('forum', forum_parse(url, parse_refs))
         else:
