@@ -91,7 +91,7 @@ class p_iframe(html.parser.HTMLParser):
                         self._src = value
 
 
-def process_comment(comments, array_anet_names):
+def process_comment(comments, array_anet_names, botname):
     submitArray = []
     for cm in comments:
         if cm.author.name in array_anet_names:
@@ -143,7 +143,7 @@ def process_comment(comments, array_anet_names):
     return submitArray
 
 
-def process_submission(submissions, array_anet_names):
+def process_submission(submissions, array_anet_names, botname):
     submitArray = []
     for sm in submissions:
         if sm.author.name in array_anet_names:
@@ -212,7 +212,7 @@ def locate_origin(url):
     #except Exception as e:
     #    errormsg = 'error::guildwars2::locate_origin:{0} :on: {1}'.format(e, url)
     #    print(e.args)
-    #    with open('gw2urlerror', 'a') as f:
+    #    with open('debug/gw2urlerror', 'a') as f:
     #        f.write(errormsg)
     #    return ('error: {0}'.format(url), '')
 

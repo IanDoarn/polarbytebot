@@ -1,8 +1,5 @@
-import html.parser
 import re
 import requests
-import urllib.parse
-import datetime
 import overwatch_html2markdown
 import markdown_dictionary as m
 import overwatch_config as config
@@ -13,7 +10,7 @@ def get_signature():
     return config.SIGNATURE.format(message=random.choice(config.FUNNY_MESSAGES))
 
 
-def process_comment(comments):
+def process_comment(comments, botname):
     submitArray = []
     for cm in comments:
         if cm.author_flair_css_class is not None and config.SEARCH_FLAIR_CSS_CLASS in cm.author_flair_css_class and \
@@ -34,21 +31,30 @@ def process_comment(comments):
             submit['signature'] = get_signature()
             submitArray.append(submit)
 
+        all_links = list()
+        mention_regex = config.Comments.MENTION_REGEX.replace('{botname}', botname)
+
         if config.Comments.SEARCH_IN_CONTENT:
-            all_links = re.findall(config.Comments.LINK_REGEX, cm.body)
-            for link in all_links or []:
+            for link_regex in config.Comments.LINK_REGEX:
+                all_links += (re.findall(link_regex, cm.body) or [])
+        elif config.Comments.SEARCH_FOR_USERNAME:
+            for link_regex in config.Comments.LINK_REGEX:
+                for found in re.findall(mention_regex.replace('{linkregex}', link_regex), cm.body) or []:
+                        all_links.append(re.search(link_regex, found).group())
+
+        for link in all_links or []:
                 if link != '':
-                    submit = {}
-                    submit['thing_id'] = cm.name
-                    submit['submitted'] = False
-                    submit['origin'], submit['content'] = locate_origin(link)
-                    submit['type'] = 'comment'
-                    submit['signature'] = get_signature()
+                    submit = {'thing_id': cm.name,
+                              'submitted': False,
+                              'origin': locate_origin(link)[0],
+                              'content': locate_origin(link)[1],
+                              'type': 'comment',
+                              'signature': get_signature()}
                     submitArray.append(submit)
     return submitArray
 
 
-def process_submission(submissions):
+def process_submission(submissions, botname):
     submitArray = []
     for sm in submissions:
         if sm.author_flair_css_class is not None and 'blizz' in sm.author_flair_css_class:
@@ -68,28 +74,31 @@ def process_submission(submissions):
             submit['signature'] = get_signature()
             submitArray.append(submit)
 
+        all_links = list()
+        mention_regex = config.Submissions.MENTION_REGEX.replace('{botname}', botname)
+
         if config.Submissions.SEARCH_IN_TEXT:
-            all_links = re.findall(config.Submissions.LINK_REGEX, sm.selftext)
-            for link in all_links or []:
-                if link != '':
-                    submit = {'thing_id': sm.name,
-                              'submitted': False,
-                              'origin': locate_origin(link)[0],
-                              'content': locate_origin(link)[1],
-                              'type': 'comment',
-                              'signature': get_signature()}
-                    submitArray.append(submit)
+            for link_regex in config.Submissions.LINK_REGEX:
+                all_links += (re.findall(link_regex, sm.selftext) or [])
+        elif config.Submissions.SEARCH_FOR_USERNAME:
+            for link_regex in config.Submissions.LINK_REGEX:
+                for found in re.findall(mention_regex.replace('{linkregex}', link_regex), sm.selftext) or []:
+                    all_links.append(re.search(link_regex, found).group())
+
         if config.Submissions.SEARCH_IN_URL:
-            all_links = re.findall(config.Submissions.LINK_REGEX, sm.url)
-            for link in all_links or []:
-                if link != '':
-                    submit = {'thing_id': sm.name,
-                              'submitted': False,
-                              'origin': locate_origin(link)[0],
-                              'content': locate_origin(link)[1],
-                              'type': 'comment',
-                              'signature': get_signature()}
-                    submitArray.append(submit)
+            for link_regex in config.Submissions.LINK_REGEX:
+                all_links += (re.findall(link_regex, sm.url) or [])
+
+        for link in all_links or []:
+            if link != '':
+                submit = {'thing_id': sm.name,
+                          'submitted': False,
+                          'origin': locate_origin(link)[0],
+                          'content': locate_origin(link)[1],
+                          'type': 'comment',
+                          'signature': get_signature()}
+                submitArray.append(submit)
+
     return submitArray
 
 
@@ -103,7 +112,7 @@ def locate_origin(url, parse_refs=True):
     except Exception as e:
         errormsg = 'error::overwatch::locate_origin:{0} :on: {1}'.format(e, url)
         print(e.args)
-        with open('owurlerror', 'a') as f:
+        with open('debug/owurlerror', 'a') as f:
             f.write(errormsg)
         return ('error: {0}'.format(url), '')
 
@@ -257,4 +266,4 @@ def html_to_markdown(content, host):
 
 if __name__ == '__main__':
     # locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745755424?page=3#post-58')
-    print(locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745727098')[1])
+    print(locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745727098'))

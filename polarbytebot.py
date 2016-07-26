@@ -71,10 +71,10 @@ class CommentQueue:
         arenanet_member = self.prepareDistribute()
         for key in self.queue:
             if key == 'Guildwars2' or key.lower() == 'test' or key.lower() == "gw2economy":
-                for post in guildwars2.process_comment(self.queue[key],arenanet_member):
+                for post in guildwars2.process_comment(self.queue[key],arenanet_member, botname=self.botname):
                     self.produced_posts.append(post)
             if key.lower() == 'overwatch' or key.lower() == 'test':
-                for post in overwatch.process_comment(self.queue[key]):
+                for post in overwatch.process_comment(self.queue[key], botname=self.botname):
                     self.produced_posts.append(post)
         return self
 
@@ -142,10 +142,10 @@ class SubmissionQueue:
         arenanet_member = self.prepareDistribute()
         for key in self.queue:
             if key == 'Guildwars2' or key.lower() == 'test' or key.lower() == "gw2economy":
-                for post in guildwars2.process_submission(self.queue[key],arenanet_member):
+                for post in guildwars2.process_submission(self.queue[key], arenanet_member, botname=self.botname):
                     self.produced_posts.append(post)
             if key.lower() == 'overwatch' or key.lower() == 'test':
-                for post in overwatch.process_submission(self.queue[key]):
+                for post in overwatch.process_submission(self.queue[key], botname=self.botname):
                     self.produced_posts.append(post)
         return self
 

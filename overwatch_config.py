@@ -8,14 +8,19 @@ def parse_forum():
 class Comments:
     TRACK_EMPLYOEES = True
     SEARCH_IN_CONTENT = False
-    LINK_REGEX = 'https?://playoverwatch\.com/[^ \])\s]*'  # FYI: search for playoverwatch.com and ???.battle.net/forum
+    SEARCH_FOR_USERNAME = True
+    #LINK_REGEX = 'https?://playoverwatch\.com/[^ \])\s]*'  # FYI: search for playoverwatch.com and ???.battle.net/forum
+    LINK_REGEX = ['https?://.*?battle\.net/[^ \])\s]*']
+    MENTION_REGEX = '\+/u/{botname} {1,3}{linkregex}'
 
 
 class Submissions:
     TRACK_EMPLOYEES = True
     SEARCH_IN_URL = True
     SEARCH_IN_TEXT = False
-    LINK_REGEX = 'https?://.*?battle\.net/[^ \])\s]*'
+    SEARCH_FOR_USERNAME = True
+    LINK_REGEX = ['https?://.*?battle\.net/[^ \])\s]*']
+    MENTION_REGEX = '\+/u/{botname} {1,3}{linkregex}'
     TASKS = [{'regexlist':['https?://(?P<region>.{2,3}?)\.battle\.net(?P<forum>/forums)'], 'action':parse_forum}]
 
 
@@ -106,6 +111,7 @@ FUNNY_MESSAGES = ['Fuck the red team.',
 
 if __name__ == '__main__':
     url = ''
+    exit(0)
     for task in Submissions.TASKS:
         for regex in task['regexlist']:
             if not re.match(regex, url):
