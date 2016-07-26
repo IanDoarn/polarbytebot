@@ -4,6 +4,8 @@ import requests
 import urllib.parse
 import datetime
 import guildwars2_html2markdown
+import guildwars2_config as config
+import random
 
 
 class p_href(html.parser.HTMLParser):
@@ -90,6 +92,8 @@ class p_iframe(html.parser.HTMLParser):
                     else:
                         self._src = value
 
+def get_signature():
+    return config.SIGNATURE.format(message=random.choice(config.FUNNY_MESSAGES))
 
 def process_comment(comments, array_anet_names, botname):
     submitArray = []
@@ -129,17 +133,26 @@ def process_comment(comments, array_anet_names, botname):
             submit['content'] = '\n\n* [Comment by {0}]({1}?context=1000) - {2}'.format(cm.author.name, cm.permalink, datetime.datetime.fromtimestamp(cm.created_utc,datetime.timezone.utc).isoformat(' '))
             submitArray.append(submit)
 
-        if(False): #disabled search in comments
-            if re.search('http.*?:\/\/.*?guildwars2.com\/', cm.body) != None:
-                all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])\s]*', cm.body)
-                for link in all_links:
-                    if link != '':
-                        submit = {}
-                        submit['thing_id'] = cm.name
-                        submit['submitted'] = False
-                        submit['origin'], submit['content'] = locate_origin(link)
-                        submit['type'] = 'comment'
-                        submitArray.append(submit)
+        all_links = list()
+        mention_regex = config.Comments.MENTION_REGEX.replace('{botname}', botname)
+
+        if config.Comments.SEARCH_IN_CONTENT:
+            for link_regex in config.Comments.LINK_REGEX:
+                all_links += (re.findall(link_regex, cm.body) or [])
+        elif config.Comments.SEARCH_FOR_USERNAME:
+            for link_regex in config.Comments.LINK_REGEX:
+                for found in re.findall(mention_regex.replace('{linkregex}', link_regex), cm.body) or []:
+                        all_links.append(re.search(link_regex, found).group())
+
+        for link in all_links or []:
+            if link != '':
+                submit = {'thing_id': cm.name,
+                          'submitted': False,
+                          'origin': locate_origin(link)[0],
+                          'content': locate_origin(link)[1],
+                          'type': 'comment',
+                          'signature': get_signature()}
+                submitArray.append(submit)
     return submitArray
 
 
@@ -174,28 +187,31 @@ def process_submission(submissions, array_anet_names, botname):
             submit['content'] = '{0}\n\n{1}?context=1000'.format(sm.selftext, sm.permalink)
             submitArray.append(submit)
 
-        if(False):  # disabled search in selftext
-            if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.selftext) != None:
-                all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])\s]*', sm.selftext)
-                for link in all_links:
-                    if link != '':
-                        submit = {}
-                        submit['thing_id'] = sm.name
-                        submit['submitted'] = False
-                        submit['origin'], submit['content'] = locate_origin(link)
-                        submit['type'] = 'comment'
-                        submitArray.append(submit)
-        if(True):   # enabled search in url
-            if re.search('http.*?:\/\/.*?guildwars2.com\/', sm.url) != None:
-                all_links = re.findall('http.*?:\/\/.*?guildwars2.com\/[^ \])]*', sm.url)
-                for link in all_links:
-                    if link != '':
-                        submit = {}
-                        submit['thing_id'] = sm.name
-                        submit['submitted'] = False
-                        submit['origin'], submit['content'] = locate_origin(link)
-                        submit['type'] = 'comment'
-                        submitArray.append(submit)
+        all_links = list()
+        mention_regex = config.Submissions.MENTION_REGEX.replace('{botname}', botname)
+
+        if config.Submissions.SEARCH_IN_TEXT:
+            for link_regex in config.Submissions.LINK_REGEX:
+                all_links += (re.findall(link_regex, sm.selftext) or [])
+        elif config.Submissions.SEARCH_FOR_USERNAME:
+            for link_regex in config.Submissions.LINK_REGEX:
+                for found in re.findall(mention_regex.replace('{linkregex}', link_regex), sm.selftext) or []:
+                    all_links.append(re.search(link_regex, found).group())
+
+        if config.Submissions.SEARCH_IN_URL:
+            for link_regex in config.Submissions.LINK_REGEX:
+                all_links += (re.findall(link_regex, sm.url) or [])
+
+        for link in all_links or []:
+            if link != '':
+                submit = {'thing_id': sm.name,
+                          'submitted': False,
+                          'origin': locate_origin(link)[0],
+                          'content': locate_origin(link)[1],
+                          'type': 'comment',
+                          'signature': get_signature()}
+                submitArray.append(submit)
+
     return submitArray
 
 
@@ -278,7 +294,7 @@ def forum_id(url):
     # https://forum-en.guildwars2.com/forum/headforum/subforum/title/page/1/post1234567
     elif identifier1 == '/page' and identifier2[1:].isdigit() and (identifier3[:5] == '#post' or identifier3[:5] == '/post'):
         return identifier3[5:]
-    # https://forum-en.guildwars2.com/forum/headforum/subforum/title/1234567
+    # https://forum-en.guildwars2.com/forum/headfopolarbytebotrum/subforum/title/1234567
     elif identifier1[1:].isdigit() and identifier2 is None and identifier3 is None:
         return identifier1[1:]
     else:

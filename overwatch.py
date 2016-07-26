@@ -43,14 +43,14 @@ def process_comment(comments, botname):
                         all_links.append(re.search(link_regex, found).group())
 
         for link in all_links or []:
-                if link != '':
-                    submit = {'thing_id': cm.name,
-                              'submitted': False,
-                              'origin': locate_origin(link)[0],
-                              'content': locate_origin(link)[1],
-                              'type': 'comment',
-                              'signature': get_signature()}
-                    submitArray.append(submit)
+            if link != '':
+                submit = {'thing_id': cm.name,
+                          'submitted': False,
+                          'origin': locate_origin(link)[0],
+                          'content': locate_origin(link)[1],
+                          'type': 'comment',
+                          'signature': get_signature()}
+                submitArray.append(submit)
     return submitArray
 
 

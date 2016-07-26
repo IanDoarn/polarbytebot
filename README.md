@@ -17,6 +17,20 @@ Developer Tracker:
  
  * /r/Overwatch (and soon related subreddits) -> /r/Blizzwatch
  * /r/Guildwars2 -> /r/gw2devtrack and /r/gw2devtrackalt
+ 
+## Interaction with the bot
+
+You can call the bot to transcript the content of a link with the following notation:
+
++/u/NAME_OF_YOUR_BOT_ACCOUNT url
+
+Example:
+
++/u/polarbytebot https://www.guildwars2.com/en/news/out-of-the-shadows-is-live/
+
+Dont forget the + before the username (no space inbetween) and at least one, up to 3 spaces between the username and the url.
+
+To make the bot transcript multiple urls with one post, you need to post this for every url you want to transcript.
 
 ## Setup
 
