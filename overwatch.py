@@ -228,9 +228,11 @@ def content_selection(content, start_str, nst, net):
 
 def forum_name(content):
     posted_by_class = re.search('<aside class="TopicPost-author">.*?</aside>', content, re.DOTALL).group(0)
-    posted_by_name = re.search('<span class="Author-name">(?P<name>.*?)</span>', posted_by_class, re.DOTALL).group(
-        'name')
+    posted_by_name = re.search('<span class="Author-name">(?P<name>.*?)</span>', posted_by_class, re.DOTALL).group('name')
     # posted_by_name = posted_by_name.replace('-', ' ', posted_by_name.count('-') - 1).replace('-', '.')
+    if 'Author-name--profileLink' in posted_by_name:
+        posted_by_playoverwatch_name = re.search('<a class="Author-name--profileLink" href=".*?">(?P<pown>.*?)</a>', posted_by_name, re.DOTALL).group('pown')
+        posted_by_name = posted_by_playoverwatch_name
     return [posted_by_name.strip(), forum_blizz(posted_by_class)]
 
 
@@ -265,5 +267,5 @@ def html_to_markdown(content, host):
 
 
 if __name__ == '__main__':
-    # locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745755424?page=3#post-58')
-    print(locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745727098'))
+    locate_origin('http://us.battle.net/forums/en/overwatch/topic/20745755424?page=3#post-58')
+    #print(locate_origin('http://us.battle.net/forums/en/overwatch/topic/20751945318#detail'))
